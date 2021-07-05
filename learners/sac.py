@@ -553,10 +553,10 @@ class SACLearnerWithCost(object):
 
         policy_gradient, policy_gradient_norm = self.tf.clip_by_global_norm(policy_gradient,
                                                                             self.args.gradient_clip_norm)
-
-        with self.lam_gradient_timer:
-            lam_loss, complementary_slackness, lam_gradient, lams, lam_stats = self.lam_forward_and_backward(mb_obs, mb_actions)
-            lam_gradient, lam_gradient_norm = self.tf.clip_by_global_norm(lam_gradient, self.args.lam_gradient_clip_norm)
+        if self.args.constrained:
+            with self.lam_gradient_timer:
+                lam_loss, complementary_slackness, lam_gradient, lams, lam_stats = self.lam_forward_and_backward(mb_obs, mb_actions)
+                lam_gradient, lam_gradient_norm = self.tf.clip_by_global_norm(lam_gradient, self.args.lam_gradient_clip_norm)
 
         self.stats.update(dict(
             iteration=iteration,
