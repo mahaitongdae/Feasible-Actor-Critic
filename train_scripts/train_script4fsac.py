@@ -105,7 +105,7 @@ def built_FSAC_parser():
 
     # learner
     parser.add_argument('--alg_name', default='FSAC')
-    parser.add_argument('--constrained', default=True)
+    parser.add_argument('--constrained', default=False)
     parser.add_argument('--gamma', type=float, default=0.99)
     parser.add_argument('--cost_gamma', type=float, default=0.99)
     parser.add_argument('--gradient_clip_norm', type=float, default=10.)
@@ -123,7 +123,7 @@ def built_FSAC_parser():
     # buffer
     parser.add_argument('--max_buffer_size', type=int, default=500000)
     parser.add_argument('--replay_starts', type=int, default=3000)
-    parser.add_argument('--replay_batch_size', type=int, default=2048)
+    parser.add_argument('--replay_batch_size', type=int, default=256)
     parser.add_argument('--replay_alpha', type=float, default=0.6)
     parser.add_argument('--replay_beta', type=float, default=0.4)
     parser.add_argument('--buffer_log_interval', type=int, default=40000)
@@ -179,13 +179,13 @@ def built_FSAC_parser():
 
     # Optimizer (PABAL)
     parser.add_argument('--max_sampled_steps', type=int, default=0)
-    parser.add_argument('--max_iter', type=int, default=3000000)
+    parser.add_argument('--max_iter', type=int, default=500000)
     parser.add_argument('--num_workers', type=int, default=NUM_WORKER)
     parser.add_argument('--num_learners', type=int, default=NUM_LEARNER)
     parser.add_argument('--num_buffers', type=int, default=NUM_BUFFER)
     parser.add_argument('--max_weight_sync_delay', type=int, default=30)
     parser.add_argument('--grads_queue_size', type=int, default=25)
-    parser.add_argument('--grads_max_reuse', type=int, default=10)
+    parser.add_argument('--grads_max_reuse', type=int, default=1)
     parser.add_argument('--eval_interval', type=int, default=5000) # 1000
     parser.add_argument('--save_interval', type=int, default=200000) # 200000
     parser.add_argument('--log_interval', type=int, default=100) # 100
