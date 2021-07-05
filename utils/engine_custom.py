@@ -318,6 +318,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         self.seed(self._seed)
         self.done = True
+        self.phi = None
 
     def parse(self, config):
         ''' Parse a config dict - see self.DEFAULT for description '''
@@ -891,6 +892,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         # Reset stateful parts of the environment
         self.first_reset = False  # Built our first world successfully
+        self.phi = self.adaptive_safety_index()
 
         # Return an observation
         return self.obs()
@@ -1736,6 +1738,13 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
                 # Constraint violations
                 info.update(self.cost())
+                old_phi = self.phi
+                self.phi = self.adaptive_safety_index()
+                if old_phi <= 0:
+                    vio_sis_cstr = (self.phi > 0)
+                else:
+                    vio_sis_cstr = (self.phi > old_phi)
+                info.update({'sis_cstr_violation': vio_sis_cstr})
 
                 # Button timer (used to delay button resampling)
                 self.buttons_timer_tick()
