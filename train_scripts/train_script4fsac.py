@@ -95,7 +95,7 @@ def built_FSAC_parser():
     parser.add_argument('--optimizer_type', type=str, default='OffPolicyAsyncWithCost')
     parser.add_argument('--off_policy', type=str, default=True)
     parser.add_argument('--random_seed', type=int, default=2)
-    parser.add_argument('--penalty_start', type=int, default=5000000)
+    parser.add_argument('--penalty_start', type=int, default=1000000)
     parser.add_argument('--demo', type=bool, default=False)
 
     # env
@@ -105,14 +105,14 @@ def built_FSAC_parser():
 
     # learner
     parser.add_argument('--alg_name', default='FSAC')
-    parser.add_argument('--constrained', default=False)
+    parser.add_argument('--constrained', default=True)
     parser.add_argument('--gamma', type=float, default=0.99)
-    parser.add_argument('--cost_gamma', type=float, default=0.99)
+    parser.add_argument('--cost_gamma', type=float, default=0.0)
     parser.add_argument('--gradient_clip_norm', type=float, default=10.)
     parser.add_argument('--lam_gradient_clip_norm', type=float, default=3.)
     parser.add_argument('--num_batch_reuse', type=int, default=1)
-    parser.add_argument('--cost_lim', type=float, default=1.0)
-    parser.add_argument('--mlp_lam', default=False)
+    parser.add_argument('--cost_lim', type=float, default=0.0)
+    parser.add_argument('--mlp_lam', default=True)
     parser.add_argument('--double_QC', type=bool, default=False)
 
     # worker
@@ -143,8 +143,8 @@ def built_FSAC_parser():
     parser.add_argument('--value_num_hidden_layers', type=int, default=2)
     parser.add_argument('--value_num_hidden_units', type=int, default=256)
     parser.add_argument('--value_hidden_activation', type=str, default='elu')
-    parser.add_argument('--value_lr_schedule', type=list, default=[8e-5, 1000000, 8e-6])
-    parser.add_argument('--cost_value_lr_schedule', type=list, default=[8e-5, 1000000, 8e-6])
+    parser.add_argument('--value_lr_schedule', type=list, default=[8e-5, 2000000, 8e-6])
+    parser.add_argument('--cost_value_lr_schedule', type=list, default=[8e-5, 2000000, 8e-6])
     parser.add_argument('--policy_model_cls', type=str, default='MLP')
     parser.add_argument('--policy_num_hidden_layers', type=int, default=2)
     parser.add_argument('--policy_num_hidden_units', type=int, default=256)
@@ -161,8 +161,8 @@ def built_FSAC_parser():
     parser.add_argument('--double_Q', type=bool, default=True)
     parser.add_argument('--target', type=bool, default=True)
     parser.add_argument('--tau', type=float, default=0.005)
-    parser.add_argument('--delay_update', type=int, default=4)
-    parser.add_argument('--dual_ascent_interval', type=int, default=12)
+    parser.add_argument('--delay_update', type=int, default=2)
+    parser.add_argument('--dual_ascent_interval', type=int, default=6)
     parser.add_argument('--deterministic_policy', type=bool, default=False)
     parser.add_argument('--action_range', type=float, default=1.0)
     parser.add_argument('--mu_bias', type=float, default=0.0)

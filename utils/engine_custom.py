@@ -1741,10 +1741,10 @@ class Engine(gym.Env, gym.utils.EzPickle):
                 old_phi = self.phi
                 self.phi = self.adaptive_safety_index()
                 if old_phi <= 0:
-                    vio_sis_cstr = (self.phi > 0)
+                    delta_phi = max(self.phi, 0)
                 else:
-                    vio_sis_cstr = (self.phi > old_phi)
-                info.update({'sis_cstr_violation': vio_sis_cstr})
+                    delta_phi = self.phi - old_phi
+                info.update({'delta_phi': delta_phi})
 
                 # Button timer (used to delay button resampling)
                 self.buttons_timer_tick()

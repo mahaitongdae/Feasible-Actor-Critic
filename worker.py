@@ -231,7 +231,7 @@ class OffPolicyWorkerWithCost(object):
             obs_tp1, reward, self.done, info = self.env.step(action.numpy())
             real_cost = info[0].get('cost', 0)
             self.sampled_costs += real_cost
-            cost = info[0].get('sis_cstr_violation', 0)
+            cost = info[0].get('delta_phi', 0)
             processed_rew = self.preprocessor.process_rew(reward, self.done)
             for i in range(self.num_agent):
                 batch_data.append((self.obs[i].copy(), action[i].numpy(), reward[i], obs_tp1[i].copy(), self.done[i], cost))
