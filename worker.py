@@ -138,6 +138,9 @@ class OffPolicyWorkerWithCost(object):
     """just for sample"""
 
     def __init__(self, policy_cls, env_id, args, worker_id):
+        if worker_id != 0: # not local worker
+            from utils.custom_env_utils import register_custom_env
+            register_custom_env()
         logging.getLogger("tensorflow").setLevel(logging.ERROR)
         self.worker_id = worker_id
         self.args = args

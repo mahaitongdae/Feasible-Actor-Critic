@@ -456,7 +456,7 @@ class SACLearnerWithCost(object):
 
     @tf.function
     def lam_forward_and_backward(self, mb_obs, mb_actions):
-        assert self.args.constrained
+        # assert self.args.constrained
         with self.tf.GradientTape() as tape:
             processed_obses = self.preprocessor.tf_process_obses(mb_obs)
             if self.args.double_QC:
@@ -553,10 +553,10 @@ class SACLearnerWithCost(object):
 
         policy_gradient, policy_gradient_norm = self.tf.clip_by_global_norm(policy_gradient,
                                                                             self.args.gradient_clip_norm)
-        if self.args.constrained:
-            with self.lam_gradient_timer:
-                lam_loss, complementary_slackness, lam_gradient, lams, lam_stats = self.lam_forward_and_backward(mb_obs, mb_actions)
-                lam_gradient, lam_gradient_norm = self.tf.clip_by_global_norm(lam_gradient, self.args.lam_gradient_clip_norm)
+        # if self.args.constrained:
+        with self.lam_gradient_timer:
+            lam_loss, complementary_slackness, lam_gradient, lams, lam_stats = self.lam_forward_and_backward(mb_obs, mb_actions)
+            lam_gradient, lam_gradient_norm = self.tf.clip_by_global_norm(lam_gradient, self.args.lam_gradient_clip_norm)
 
         self.stats.update(dict(
             iteration=iteration,
@@ -578,13 +578,19 @@ class SACLearnerWithCost(object):
             qc_gradient_norm1=qc_gradient_norm1.numpy(),
             # qc_gradient_norm2=qc_gradient_norm2.numpy(),
             policy_gradient_norm=policy_gradient_norm.numpy(),
-            lam_gradient_norm=lam_gradient_norm.numpy(),
-            lam_loss=lam_loss.numpy(),
-            complementary_slackness=complementary_slackness.numpy(),
-            penalty_terms=penalty_terms.numpy(),
-            max_multiplier=np.max(lams.numpy()),
-            mean_multiplier=np.mean(lams.numpy())
         ))
+        if self.args.constrained:
+            self.stats.update(dict(
+                lam_gradient_norm=lam_gradient_norm.numpy(),
+                lam_loss=lam_loss.numpy(),
+                complementary_slackness=complementary_slackness.numpy(),
+                penalty_terms=penalty_terms.numpy(),
+                max_multiplier=np.max(lams.numpy()),
+                mean_multiplier=np.mean(lams.numpy())
+            ))
+
+            for (k, v) in lam_stats.items():
+                self.stats.update({k: v.numpy()})
 
         # update statistics
         for (k, v) in policy_stats.items():
@@ -593,8 +599,7 @@ class SACLearnerWithCost(object):
         for (k, v) in dist_stats.items():
             self.stats.update({k: v.numpy()})
 
-        for (k, v) in lam_stats.items():
-            self.stats.update({k: v.numpy()})
+
 
 
         if self.args.alpha == 'auto':
