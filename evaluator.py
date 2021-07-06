@@ -248,10 +248,10 @@ class EvaluatorWithCost(object):
         kwargs = copy.deepcopy(vars(self.args))
         if self.args.env_id == 'PathTracking-v0':
             self.env = gym.make(self.args.env_id, num_agent=self.args.num_eval_agent, num_future_data=self.args.num_future_data)
-        elif 'Custom' in args.env_id and args.mode == 'training':
-            from utils.custom_env_utils import register_custom_env
-            register_custom_env()
         else:
+            if 'Custom' in args.env_id and args.mode == 'training':
+                from utils.custom_env_utils import register_custom_env
+                register_custom_env()
             env = gym.make(self.args.env_id)
             self.env = DummyVecEnv(env)
         if isinstance(self.args.random_seed, int):

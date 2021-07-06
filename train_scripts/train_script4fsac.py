@@ -65,7 +65,7 @@ NUM_BUFFER = 10
 def built_FSAC_parser():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--mode', type=str, default='testing') # training testing
+    parser.add_argument('--mode', type=str, default='training') # training testing
     mode = parser.parse_args().mode
 
     if mode == 'testing':
@@ -95,7 +95,7 @@ def built_FSAC_parser():
     parser.add_argument('--optimizer_type', type=str, default='OffPolicyAsyncWithCost')
     parser.add_argument('--off_policy', type=str, default=True)
     parser.add_argument('--random_seed', type=int, default=2)
-    parser.add_argument('--penalty_start', type=int, default=1500000)
+    parser.add_argument('--penalty_start', type=int, default=5000000)
     parser.add_argument('--demo', type=bool, default=False)
 
     # env
@@ -111,8 +111,8 @@ def built_FSAC_parser():
     parser.add_argument('--gradient_clip_norm', type=float, default=10.)
     parser.add_argument('--lam_gradient_clip_norm', type=float, default=3.)
     parser.add_argument('--num_batch_reuse', type=int, default=1)
-    parser.add_argument('--cost_lim', type=float, default=4.0)
-    parser.add_argument('--mlp_lam', default=True)
+    parser.add_argument('--cost_lim', type=float, default=1.0)
+    parser.add_argument('--mlp_lam', default=False)
     parser.add_argument('--double_QC', type=bool, default=False)
 
     # worker
@@ -179,11 +179,11 @@ def built_FSAC_parser():
 
     # Optimizer (PABAL)
     parser.add_argument('--max_sampled_steps', type=int, default=0)
-    parser.add_argument('--max_iter', type=int, default=500000)
+    parser.add_argument('--max_iter', type=int, default=2000000)
     parser.add_argument('--num_workers', type=int, default=NUM_WORKER)
     parser.add_argument('--num_learners', type=int, default=NUM_LEARNER)
     parser.add_argument('--num_buffers', type=int, default=NUM_BUFFER)
-    parser.add_argument('--max_weight_sync_delay', type=int, default=30)
+    parser.add_argument('--max_weight_sync_delay', type=int, default=300)
     parser.add_argument('--grads_queue_size', type=int, default=25)
     parser.add_argument('--grads_max_reuse', type=int, default=1)
     parser.add_argument('--eval_interval', type=int, default=5000) # 1000
