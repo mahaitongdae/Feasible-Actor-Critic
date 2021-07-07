@@ -87,6 +87,9 @@ def built_FSAC_parser():
 
     parser.add_argument('--motivation', type=str, default='sac lagrangian test')  # training testing
 
+    # new paras:
+    parser.add_argument('--safety_control_ended', type=int, default=300000)
+
     # trainer
     parser.add_argument('--policy_type', type=str, default='PolicyWithMu')
     parser.add_argument('--worker_type', type=str, default='OffPolicyWorkerWithCost')

@@ -423,7 +423,10 @@ class OffPolicyAsyncOptimizerWithCost(object):
                         weights = ray.put(self.local_worker.get_weights())
                     worker.set_weights.remote(weights)
                     self.steps_since_update[worker] = 0
-                self.sample_tasks.add(worker, worker.sample_with_count.remote())
+                if self.iteration > self.args.safety_control_ended:
+                    self.sample_tasks.add(worker, worker.sample_with_count.remote())
+                else:
+                    self.sample_tasks.add(worker, worker.safety_control_sample_with_count.remote())
 
         # replay
         with self.timers["replay_timer"]:

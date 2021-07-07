@@ -300,9 +300,13 @@ class OffPolicyWorkerWithCost(object):
                 judge_is_nan([action])
                 raise ValueError
 
-
-
-            obs_tp1, reward, self.done, info = self.env.step(action.numpy())
+            projected_action, valid_adamba_sc, self.env, _ = \
+                AdamBA_SC(self.obs, action.numpy(), env=self.env)
+            # dt_ration always =1.0 for AdamBA SC, we do not rely on small dt
+            if valid_adamba_sc == "adamba_sc success":
+                obs_tp1, reward, self.done, info = self.env.step(np.array([projected_action]))
+            else:
+                obs_tp1, reward, self.done, info = self.env.step(action.numpy())
             real_cost = info[0].get('cost', 0)
             self.sampled_costs += real_cost
             cost = info[0].get('delta_phi', 0)
@@ -327,9 +331,8 @@ class OffPolicyWorkerWithCost(object):
         batch_data, costs_count = self.sample()
         return batch_data, len(batch_data), costs_count
 
-class OffPolicyWorkerWithSafetyControl(OffPolicyWorkerWithCost):
-
-    def __init__(self, policy_cls, env_id, args, worker_id):
-        super(OffPolicyWorkerWithSafetyControl, self).__init__(policy_cls, env_id, args, worker_id)
+    def safety_control_sample_with_count(self):
+        batch_data, costs_count = self.sample_with_safety_control()
+        return batch_data, len(batch_data), costs_count
 
 
