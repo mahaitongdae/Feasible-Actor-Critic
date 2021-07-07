@@ -300,6 +300,7 @@ class EvaluatorWithCost(object):
         cost_list = []
         qc_list = []
         lam_list = []
+        ep_phi_increase_times = 0
         obs = self.env.reset()
         if render: self.env.render()
         if steps is not None:
@@ -341,10 +342,13 @@ class EvaluatorWithCost(object):
                 # print("lam: {}".format(lam.numpy()))
                 obs, reward, done, info = self.env.step(action.numpy())
                 cost = info[0].get('cost')
+                delta_phi = info[0].get('delta_phi')
                 if render: self.env.render()
                 reward_list.append(reward[0])
                 info_list.append(info[0])
                 cost_list.append(cost)
+                if delta_phi > 0:
+                    ep_phi_increase_times += 1
         episode_return = sum(reward_list)
         episode_len = len(reward_list)
         info_dict = dict()
@@ -360,7 +364,8 @@ class EvaluatorWithCost(object):
                               episode_return=episode_return,
                               episode_len=episode_len,
                               episode_cost=episode_cost,
-                              ep_cost_rate=ep_cost_rate))
+                              ep_cost_rate=ep_cost_rate,
+                              ep_phi_increase_times=ep_phi_increase_times))
         return info_dict
 
     def run_n_episodes(self, n):
@@ -465,8 +470,12 @@ class EvaluatorWithCost(object):
         elif self.args.env_id[:4] == 'Safe':
             episode_cost = episode_info['episode_cost']
             ep_cost_rate = episode_info['ep_cost_rate']
+            ep_phi_increase_times = episode_info['ep_phi_increase_times']
             key_list.extend(['episode_cost', 'ep_cost_rate'])
             value_list.extend([episode_cost, ep_cost_rate])
+            if 'Custom' in self.args.env_id:
+                key_list.extend(['ep_phi_increase_times'])
+                value_list.extend([ep_phi_increase_times])
 
         return dict(zip(key_list, value_list))
 
