@@ -16,6 +16,7 @@ import numpy as np
 from preprocessor import Preprocessor
 from utils.dummy_vec_env import DummyVecEnv
 from utils.misc import judge_is_nan
+from utils.safety_controller import AdamBA_SC
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -280,6 +281,44 @@ class OffPolicyWorkerWithCost(object):
         self.num_costs += int(self.sampled_costs)
         return batch_data, int(self.sampled_costs)
 
+    def sample_with_safety_control(self):
+        batch_data = []
+        self.sampled_costs = 0
+        for _ in range(int(self.batch_size/self.num_agent)):
+            processed_obs = self.preprocessor.process_obs(self.obs)
+            judge_is_nan([processed_obs])
+            action, logp = self.policy_with_value.compute_action(self.tf.constant(processed_obs))
+            if self.explore_sigma is not None:
+                action += np.random.normal(0, self.explore_sigma, np.shape(action))
+            try:
+                judge_is_nan([action])
+            except ValueError:
+                print('processed_obs', processed_obs)
+                print('preprocessor_params', self.preprocessor.get_params())
+                print('policy_weights', self.policy_with_value.policy.trainable_weights)
+                action, logp = self.policy_with_value.compute_action(processed_obs)
+                judge_is_nan([action])
+                raise ValueError
+
+
+
+            obs_tp1, reward, self.done, info = self.env.step(action.numpy())
+            real_cost = info[0].get('cost', 0)
+            self.sampled_costs += real_cost
+            cost = info[0].get('delta_phi', 0)
+            processed_rew = self.preprocessor.process_rew(reward, self.done)
+            for i in range(self.num_agent):
+                batch_data.append((self.obs[i].copy(), action[i].numpy(), reward[i], obs_tp1[i].copy(), self.done[i], cost))
+            self.obs = self.env.reset()
+
+        if self.worker_id == 1 and self.sample_times % self.args.worker_log_interval == 0:
+            logger.info('Worker_info: {}'.format(self.get_stats()))
+
+        self.num_sample += len(batch_data)
+        self.sample_times += 1
+        self.num_costs += int(self.sampled_costs)
+        return batch_data, int(self.sampled_costs)
+
     def sample_with_count(self):
         batch_data, costs_count = self.sample()
         return batch_data, len(batch_data), costs_count
@@ -287,3 +326,10 @@ class OffPolicyWorkerWithCost(object):
     def random_sample_with_count(self):
         batch_data, costs_count = self.sample()
         return batch_data, len(batch_data), costs_count
+
+class OffPolicyWorkerWithSafetyControl(OffPolicyWorkerWithCost):
+
+    def __init__(self, policy_cls, env_id, args, worker_id):
+        super(OffPolicyWorkerWithSafetyControl, self).__init__(policy_cls, env_id, args, worker_id)
+
+
