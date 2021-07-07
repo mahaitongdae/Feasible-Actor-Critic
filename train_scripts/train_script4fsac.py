@@ -164,7 +164,7 @@ def built_FSAC_parser():
     parser.add_argument('--delay_update', type=int, default=2)
     parser.add_argument('--dual_ascent_interval', type=int, default=6)
     parser.add_argument('--deterministic_policy', type=bool, default=False)
-    parser.add_argument('--action_range', type=float, default=1.0)
+    parser.add_argument('--action_range', type=float, default=10.0)
     parser.add_argument('--mu_bias', type=float, default=0.0)
     cost_lim = parser.parse_args().cost_lim
     parser.add_argument('--cost_bias', type=float, default=0.0)
