@@ -26,7 +26,7 @@ from learners.ndpg import NDPGLearner
 from learners.sac import SACLearner, SACLearnerWithCost
 from learners.td3 import TD3Learner
 from optimizer import OffPolicyAsyncOptimizer, SingleProcessOffPolicyOptimizer, OffPolicyAsyncOptimizerWithCost
-from policy import PolicyWithQs, PolicyWithMu
+from policy import PolicyWithQs, PolicyWithMu, PolicyWithAdaSafetyIndex
 from tester import Tester
 from trainer import Trainer
 from worker import OffPolicyWorker, OffPolicyWorkerWithCost
@@ -56,7 +56,8 @@ NAME2BUFFERCLS = dict([('normal', ReplayBuffer),
 NAME2OPTIMIZERCLS = dict([('OffPolicyAsync', OffPolicyAsyncOptimizer),
                           ('OffPolicyAsyncWithCost', OffPolicyAsyncOptimizerWithCost),
                           ('SingleProcessOffPolicy', SingleProcessOffPolicyOptimizer)])
-NAME2POLICYCLS = dict([('PolicyWithQs', PolicyWithQs),('PolicyWithMu',PolicyWithMu)])
+NAME2POLICYCLS = dict([('PolicyWithQs', PolicyWithQs),('PolicyWithMu',PolicyWithMu),
+                       ('PolicyWithAdaSafetyIndex', PolicyWithAdaSafetyIndex)])
 NAME2EVALUATORCLS = dict([('Evaluator', Evaluator), ('EvaluatorWithCost', EvaluatorWithCost), ('None', None)])
 NUM_WORKER = 10
 NUM_LEARNER = 10
@@ -88,7 +89,7 @@ def built_FSAC_parser():
     parser.add_argument('--motivation', type=str, default='sac lagrangian test')  # training testing
 
     # trainer
-    parser.add_argument('--policy_type', type=str, default='PolicyWithMu')
+    parser.add_argument('--policy_type', type=str, default='PolicyWithAdaSafetyIndex')
     parser.add_argument('--worker_type', type=str, default='OffPolicyWorkerWithCost')
     parser.add_argument('--evaluator_type', type=str, default='EvaluatorWithCost')
     parser.add_argument('--buffer_type', type=str, default='cost')
@@ -99,7 +100,7 @@ def built_FSAC_parser():
     parser.add_argument('--demo', type=bool, default=False)
 
     # env
-    parser.add_argument('--env_id', default='Safexp-CustomGoal1-v0')
+    parser.add_argument('--env_id', default='Safexp-CustomGoal2-v0')
     parser.add_argument('--num_agent', type=int, default=1)
     parser.add_argument('--num_future_data', type=int, default=0)
 

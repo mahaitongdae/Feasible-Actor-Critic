@@ -522,6 +522,7 @@ class SACLearnerWithCost(object):
             alpha_gradient = tape.gradient(alpha_loss, self.policy_with_value.alpha_model.trainable_weights)
             return alpha_loss, self.tf.exp(log_alpha), alpha_gradient
 
+    @tf.function
     def k_forward_and_backward(self, sigma=0.04, hazards_size=0.15, n=2):
         sis_infos = self.batch_data['batch_sis_infos']
         # sis_infos shape: [batch size, 2(t,tp1), 4(hazards num), 2(d, dotd)]

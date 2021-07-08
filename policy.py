@@ -598,9 +598,11 @@ class PolicyWithAdaSafetyIndex(PolicyWithMu):
                  deterministic_policy, action_range, lam_lr_schedule, dual_ascent_interval=1, **kwargs)
 
         k_lr = 3e-4
-        self.K = LamModel(name='k', init_var=2)
+        self.K = LamModel(name='k', init_var=1.0)
         self.k_optimizer = self.tf.keras.optimizers.Adam(k_lr, name='k_opt')
         self.adaptive_safety_index = kwargs.get('adaptive_safety_index')
+        self.models += (self.K,)
+        self.optimizers += (self.k_optimizer,)
 
     @tf.function
     def apply_gradients(self, iteration, grads):
@@ -635,7 +637,7 @@ class PolicyWithAdaSafetyIndex(PolicyWithMu):
                         alpha_grad = grads[-2:-1]
                         self.alpha_optimizer.apply_gradients(zip(alpha_grad, self.alpha_model.trainable_weights))
                     if self.adaptive_safety_index:
-                        k_grad = grads[-1]
+                        k_grad = grads[-1:]
                         self.k_optimizer.apply_gradients(zip(k_grad, self.K.trainable_weights))
             else:
                 q_weights_len = len(self.Q1.trainable_weights)
@@ -651,7 +653,7 @@ class PolicyWithAdaSafetyIndex(PolicyWithMu):
                         self.update_policy_target()
                         self.update_Q1_target()
                     if self.adaptive_safety_index:
-                        k_grad = grads[-1]
+                        k_grad = grads[-1:]
                         self.k_optimizer.apply_gradients(zip(k_grad, self.K.trainable_weights))
 
     @property
