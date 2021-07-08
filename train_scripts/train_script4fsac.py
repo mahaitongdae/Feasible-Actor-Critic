@@ -65,7 +65,7 @@ NUM_BUFFER = 10
 def built_FSAC_parser():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--mode', type=str, default='testing') # training testing
+    parser.add_argument('--mode', type=str, default='training') # training testing
     mode = parser.parse_args().mode
 
     if mode == 'testing':
@@ -95,7 +95,7 @@ def built_FSAC_parser():
     parser.add_argument('--optimizer_type', type=str, default='OffPolicyAsyncWithCost')
     parser.add_argument('--off_policy', type=str, default=True)
     parser.add_argument('--random_seed', type=int, default=2)
-    parser.add_argument('--penalty_start', type=int, default=1000000)
+    parser.add_argument('--penalty_start', type=int, default=600000)
     parser.add_argument('--demo', type=bool, default=False)
 
     # env
