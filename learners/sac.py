@@ -240,6 +240,7 @@ class SACLearnerWithCost(object):
         self.alpha_timer = TimerStat()
         self.target_timer = TimerStat()
         self.lam_gradient_timer = TimerStat()
+        self.k_gradient_timer = TimerStat()
         self.stats = {}
         self.info_for_buffer = {}
         self.counter = 0
@@ -262,11 +263,14 @@ class SACLearnerWithCost(object):
                            'batch_rewards': batch_data[2].astype(np.float32),
                            'batch_obs_tp1': batch_data[3].astype(np.float32),
                            'batch_dones': batch_data[4].astype(np.float32),
-                           'batch_costs': batch_data[5].astype(np.float32)
+                           'batch_costs': batch_data[5].astype(np.float32),
+                           'batch_sis_infos': batch_data[6].astype(np.float32)
                            }
 
         with self.target_timer:
             target, cost_target = self.compute_clipped_double_q_target()
+
+
 
         self.batch_data.update(dict(batch_targets=target, batch_cost_targets=cost_target))
         if self.args.buffer_type != 'normal':
@@ -293,7 +297,7 @@ class SACLearnerWithCost(object):
                                   (np.minimum(target_Q1_of_tp1, target_Q2_of_tp1)-alpha*logp_tp1.numpy())
 
 
-        processed_cost = self.batch_data['batch_costs']
+        processed_cost = self.compute_delta_safety_index()
         # target_QC_of_tp1 = processed_cost + self.args.cost_gamma * self.policy_with_value.compute_QC1_target(processed_obs_tp1, act_tp1).numpy()
         if self.args.double_QC:
             target_QC2_of_tp1 = self.policy_with_value.compute_QC2_target(processed_obs_tp1, act_tp1).numpy()
@@ -303,6 +307,27 @@ class SACLearnerWithCost(object):
             clipped_double_qc_target = processed_cost + self.args.cost_gamma * target_QC1_of_tp1
 
         return clipped_double_q_target, np.clip(clipped_double_qc_target, 0, np.inf)
+
+    def compute_delta_safety_index(self, sigma=0.04, n=2, hazards_size=0.15):
+        '''
+        synthesis the safety index that ensures the valid solution
+        '''
+        k = self.policy_with_value.get_k.numpy()
+        sis_infos = self.batch_data['batch_sis_infos']
+        # sis_infos shape: [batch size, 2(t,tp1), 4(hazards num), 2(d, dotd)]
+        d_t = sis_infos[:, 0, :, 0]
+        dotd_t = sis_infos[:, 0, :, 1]
+        d_tp1 = sis_infos[:, 1, :, 0]
+        dotd_tp1 = sis_infos[:, 1, :, 1]
+        phi_t = sigma + hazards_size ** n - d_t ** n - k * dotd_t
+        phi_t = np.clip(np.max(phi_t, axis=1), 0, np.inf)
+
+        phi_tp1 = sigma + hazards_size ** n - d_tp1 ** n - k * dotd_tp1
+        phi_tp1 = np.max(phi_tp1, axis=1)
+        delta_phi = phi_tp1 - phi_t
+        self.batch_data.update(dict(batch_delta_phi=delta_phi))
+
+        return delta_phi
 
     def compute_td_error(self):
         processed_obs = self.preprocessor.tf_process_obses(self.batch_data['batch_obs']).numpy()  # n_step*obs_dim
@@ -497,6 +522,32 @@ class SACLearnerWithCost(object):
             alpha_gradient = tape.gradient(alpha_loss, self.policy_with_value.alpha_model.trainable_weights)
             return alpha_loss, self.tf.exp(log_alpha), alpha_gradient
 
+    def k_forward_and_backward(self, sigma=0.04, hazards_size=0.15, n=2):
+        sis_infos = self.batch_data['batch_sis_infos']
+        # sis_infos shape: [batch size, 2(t,tp1), 4(hazards num), 2(d, dotd)]
+        d_t = sis_infos[:, 0, :, 0]
+        dotd_t = sis_infos[:, 0, :, 1]
+        d_tp1 = sis_infos[:, 1, :, 0]
+        dotd_tp1 = sis_infos[:, 1, :, 1]
+
+        with self.tf.GradientTape() as tape:
+            k = self.policy_with_value.get_k
+            phi_t = sigma + hazards_size ** n - d_t ** n - k * dotd_t
+            phi_t = self.tf.clip_by_value(self.tf.reduce_max(phi_t, axis=1), 0, 100)
+
+            phi_tp1 = sigma + hazards_size ** n - d_tp1 ** n - k * dotd_tp1
+            phi_tp1 = self.tf.reduce_max(phi_tp1, axis=1)
+            delta_phi = phi_tp1 - phi_t
+
+            k_loss = self.tf.reduce_mean(self.tf.where(delta_phi > 0, delta_phi, self.tf.zeros_like(delta_phi)))
+
+        with self.tf.name_scope('k_gradient') as scope:
+            k_gradient = tape.gradient(k_loss, self.policy_with_value.K.trainable_weights)
+
+            return k, k_loss, k_gradient
+
+
+
     def export_graph(self, writer):
         mb_obs = self.batch_data['batch_obs']
         mb_targets = self.batch_data['batch_targets']
@@ -558,6 +609,10 @@ class SACLearnerWithCost(object):
             lam_loss, complementary_slackness, lam_gradient, lams, lam_stats = self.lam_forward_and_backward(mb_obs, mb_actions)
             lam_gradient, lam_gradient_norm = self.tf.clip_by_global_norm(lam_gradient, self.args.lam_gradient_clip_norm)
 
+        with self.k_gradient_timer:
+            k, k_loss, k_gradient = self.k_forward_and_backward()
+            k_gradient, k_gradient_norm = self.tf.clip_by_global_norm(k_gradient, self.args.gradient_clip_norm)
+
         self.stats.update(dict(
             iteration=iteration,
             q_timer=self.q_gradient_timer.mean,
@@ -578,6 +633,9 @@ class SACLearnerWithCost(object):
             qc_gradient_norm1=qc_gradient_norm1.numpy(),
             # qc_gradient_norm2=qc_gradient_norm2.numpy(),
             policy_gradient_norm=policy_gradient_norm.numpy(),
+            safety_index_k = k.numpy(),
+            safety_index_k_loss=k_loss.numpy(),
+            safety_index_k_gradient_norm = k_gradient_norm.numpy()
         ))
         if self.args.constrained:
             self.stats.update(dict(
@@ -612,10 +670,10 @@ class SACLearnerWithCost(object):
                                    alpha_gradient_norm=alpha_gradient_norm.numpy(),
                                    alpha_time=self.alpha_timer.mean))
             gradient_tensor = q_gradient1 + q_gradient2 + qc_gradient1 + qc_gradient2 \
-                              + policy_gradient + lam_gradient + alpha_gradient
+                              + policy_gradient + lam_gradient + alpha_gradient + k_gradient
         else:
             gradient_tensor = q_gradient1 + q_gradient2 + qc_gradient1 + qc_gradient2 \
-                              + policy_gradient + lam_gradient
+                              + policy_gradient + lam_gradient + k_gradient
 
         return list(map(lambda x: x.numpy(), gradient_tensor))
 

@@ -114,6 +114,8 @@ def built_FSAC_parser():
     parser.add_argument('--cost_lim', type=float, default=0.0)
     parser.add_argument('--mlp_lam', default=True)
     parser.add_argument('--double_QC', type=bool, default=False)
+    parser.add_argument('--adaptive_safety_index', type=bool, default=True)
+
 
     # worker
     parser.add_argument('--batch_size', type=int, default=1024)

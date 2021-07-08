@@ -319,6 +319,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
         self.seed(self._seed)
         self.done = True
         self.phi = None
+        self.sis_info = dict()
 
     def parse(self, config):
         ''' Parse a config dict - see self.DEFAULT for description '''
@@ -1334,39 +1335,35 @@ class Engine(gym.Env, gym.utils.EzPickle):
         '''
         synthesis the safety index that ensures the valid solution 
         '''
-        # print(k)
-        # print(sigma)
-        # print(n)
-        # exit(0)
         if self.constrain_hazards:
 
             # initialize safety index
             phi = -1e8
+            sis_info_t = self.sis_info.get('sis_data', [])
+            sis_info_tp1 = []
 
             # iterate the hazard to compute the maximum safety index 
             for h_pos in self.hazards_pos:
-                # get the state 
+                # get the state
                 # d = h_dist
                 h_dist = self.dist_xy(h_pos)
                 d = h_dist
 
-                # dot d = velocity 
+                # dot d = velocity
                 vel_vec = self.data.get_body_xvelp('robot')[0:2]
                 robot_pos = self.world.robot_pos()
                 robot_to_hazard_direction = (h_pos - robot_pos)[0:2]
-                dotd = -np.dot(vel_vec, robot_to_hazard_direction) / np.linalg.norm(robot_to_hazard_direction) # if dotd <0, then we are getting closer to hazard
-                
-                # compute the safety index 
+                dotd = -np.dot(vel_vec, robot_to_hazard_direction) / np.linalg.norm(robot_to_hazard_direction)
+                # if dotd <0, then we are getting closer to hazard
+                sis_info_tp1.append((d, dotd))
+
+                # compute the safety index
                 phi_tmp = sigma + self.hazards_size**n - d**n - k*dotd
-                # print(sigma)
-                # print(self.hazards_size**n)
-                # print(-d**n)
-                # print(-k*dotd)
-                # print("-"*20)
-                # select the largest safety index 
+                # select the largest safety index
                 if phi_tmp > phi:
                     phi = phi_tmp
 
+            self.sis_info.update(dict(sis_data=sis_info_tp1, sis_trans=(sis_info_t, sis_info_tp1)))
             return phi 
         
         elif self.constrain_pillars:
@@ -1740,7 +1737,10 @@ class Engine(gym.Env, gym.utils.EzPickle):
                     delta_phi = max(self.phi, 0)
                 else:
                     delta_phi = self.phi - old_phi
+
+                # update info dict
                 info.update({'delta_phi': delta_phi})
+                info.update(self.sis_info)
 
                 # Button timer (used to delay button resampling)
                 self.buttons_timer_tick()
