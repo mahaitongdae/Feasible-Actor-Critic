@@ -319,10 +319,13 @@ class EvaluatorWithCost(object):
 
                 obs, reward, done, info = self.env.step(action.numpy())
                 cost = info[0].get('cost')
+                delta_phi = info[0].get('delta_phi')
                 if render: self.env.render()
                 reward_list.append(reward[0])
                 info_list.append(info[0])
                 cost_list.append(cost)
+                if delta_phi > 0:
+                    ep_phi_increase_times += 1
         else:
             while not done:
                 processed_obs = self.preprocessor.tf_process_obses(obs)

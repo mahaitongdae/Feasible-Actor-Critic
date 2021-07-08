@@ -65,21 +65,21 @@ NUM_BUFFER = 10
 def built_FSAC_parser():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--mode', type=str, default='training') # training testing
+    parser.add_argument('--mode', type=str, default='testing') # training testing
     mode = parser.parse_args().mode
 
     if mode == 'testing':
-        test_dir = '../results/FSAC/CustomGoal/CustomGoal1-2021-07-05-16-28-21'
+        test_dir = '../results/FSAC/CustomGoal/CustomGoal2-2021-07-08-00-24-06'
         params = json.loads(open(test_dir + '/config.json').read())
         time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         test_log_dir = params['log_dir'] + '/tester/test-{}'.format(time_now)
         params.update(dict(test_dir=test_dir,
-                           test_iter_list=[400000],
+                           test_iter_list=[1000000],
                            test_log_dir=test_log_dir,
-                           num_eval_episode=100,
+                           num_eval_episode=5,
                            num_eval_agent=1,
                            eval_log_interval=1,
-                           fixed_steps=1000,
+                           fixed_steps=None,
                            eval_render=True))
         for key, val in params.items():
             parser.add_argument("-" + key, default=val)
@@ -99,7 +99,7 @@ def built_FSAC_parser():
     parser.add_argument('--demo', type=bool, default=False)
 
     # env
-    parser.add_argument('--env_id', default='Safexp-CustomGoal1-v0')
+    parser.add_argument('--env_id', default='Safexp-CustomGoal2-v0')
     parser.add_argument('--num_agent', type=int, default=1)
     parser.add_argument('--num_future_data', type=int, default=0)
 
@@ -131,7 +131,7 @@ def built_FSAC_parser():
     # tester and evaluator
     parser.add_argument('--num_eval_episode', type=int, default=5)
     parser.add_argument('--eval_log_interval', type=int, default=1)
-    parser.add_argument('--fixed_steps', type=int, default=1000)
+    parser.add_argument('--fixed_steps', type=int, default=None)
     parser.add_argument('--eval_render', type=bool, default=False)
     num_eval_episode = parser.parse_args().num_eval_episode
     parser.add_argument('--num_eval_agent', type=int, default=1)
