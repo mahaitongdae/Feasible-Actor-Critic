@@ -70,7 +70,7 @@ def built_FSAC_parser():
     mode = parser.parse_args().mode
 
     if mode == 'testing':
-        test_dir = '../results/FSAC/CustomGoal/CustomGoal1-2021-07-05-16-28-21'
+        test_dir = '../results/FSAC/CustomGoal/CustomGoal2-2021-07-09-10-48-18'
         params = json.loads(open(test_dir + '/config.json').read())
         time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         test_log_dir = params['log_dir'] + '/tester/test-{}'.format(time_now)
@@ -203,8 +203,8 @@ def built_FSAC_parser():
     parser.add_argument('--result_dir', type=str, default=results_dir)
     parser.add_argument('--log_dir', type=str, default=results_dir + '/logs')
     parser.add_argument('--model_dir', type=str, default=results_dir + '/models')
-    parser.add_argument('--model_load_dir', type=str, default='../results/FSAC/CustomGoal/CustomGoal2-2021-07-09-00-11-42/models')
-    parser.add_argument('--model_load_ite', type=int, default=1200000)
+    parser.add_argument('--model_load_dir', type=str, default=None)
+    parser.add_argument('--model_load_ite', type=int, default=None)
     parser.add_argument('--ppc_load_dir', type=str, default=None)
 
     return parser.parse_args()

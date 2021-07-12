@@ -381,6 +381,8 @@ class EvaluatorWithCost(object):
             metrics_list.append(self.metrics_for_an_episode(episode_info))
         out = {}
         for key in metrics_list[0].keys():
+            if key == 'phi_list':
+                continue
             value_list = list(map(lambda x: x[key], metrics_list))
             out.update({key: sum(value_list)/len(value_list)})
         return metrics_list, out
@@ -500,7 +502,10 @@ class EvaluatorWithCost(object):
                 n_metrics_list, mean_metric_dict = self.run_n_episodes_parallel(self.args.num_eval_episode)
             with self.writer.as_default():
                 for key, val in mean_metric_dict.items():
-                    self.tf.summary.scalar("evaluation/{}".format(key), val, step=self.iteration)
+                    try:
+                        self.tf.summary.scalar("evaluation/{}".format(key), val, step=self.iteration)
+                    except:
+                        pass
                 for key, val in self.get_stats().items():
                     self.tf.summary.scalar("evaluation/{}".format(key), val, step=self.iteration)
                 self.writer.flush()
