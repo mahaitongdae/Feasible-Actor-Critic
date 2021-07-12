@@ -300,6 +300,7 @@ class EvaluatorWithCost(object):
         cost_list = []
         qc_list = []
         lam_list = []
+        phi_list = []
         ep_phi_increase_times = 0
         obs = self.env.reset()
         if render: self.env.render()
@@ -323,6 +324,7 @@ class EvaluatorWithCost(object):
                 reward_list.append(reward[0])
                 info_list.append(info[0])
                 cost_list.append(cost)
+                phi_list.append(self.env.adaptive_safety_index(k=self.policy_with_value.get_k))
         else:
             while not done:
                 processed_obs = self.preprocessor.tf_process_obses(obs)
@@ -349,6 +351,7 @@ class EvaluatorWithCost(object):
                 cost_list.append(cost)
                 if delta_phi > 0:
                     ep_phi_increase_times += 1
+                phi_list.append(self.env.adaptive_safety_index(k=self.policy_with_value.get_k))
         episode_return = sum(reward_list)
         episode_len = len(reward_list)
         info_dict = dict()
@@ -362,6 +365,7 @@ class EvaluatorWithCost(object):
         info_dict.update(dict(obs_list=np.array(obs_list),
                               action_list=np.array(action_list),
                               reward_list=np.array(reward_list),
+                              phi_list=np.array(phi_list),
                               episode_return=episode_return,
                               episode_len=episode_len,
                               episode_cost=episode_cost,
@@ -472,11 +476,12 @@ class EvaluatorWithCost(object):
             episode_cost = episode_info['episode_cost']
             ep_cost_rate = episode_info['ep_cost_rate']
             ep_phi_increase_times = episode_info['ep_phi_increase_times']
+            phi_list = episode_info['phi_list']
             key_list.extend(['episode_cost', 'ep_cost_rate'])
             value_list.extend([episode_cost, ep_cost_rate])
             if 'Custom' in self.args.env_id:
-                key_list.extend(['ep_phi_increase_times'])
-                value_list.extend([ep_phi_increase_times])
+                key_list.extend(['ep_phi_increase_times', 'phi_list'])
+                value_list.extend([ep_phi_increase_times, phi_list])
 
         return dict(zip(key_list, value_list))
 
