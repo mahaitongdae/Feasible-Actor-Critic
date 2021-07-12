@@ -203,8 +203,8 @@ def built_FSAC_parser():
     parser.add_argument('--result_dir', type=str, default=results_dir)
     parser.add_argument('--log_dir', type=str, default=results_dir + '/logs')
     parser.add_argument('--model_dir', type=str, default=results_dir + '/models')
-    parser.add_argument('--model_load_dir', type=str, default=None)
-    parser.add_argument('--model_load_ite', type=int, default=None)
+    parser.add_argument('--model_load_dir', type=str, default='../results/FSAC/CustomGoal/CustomGoal2-2021-07-09-00-11-42/models')
+    parser.add_argument('--model_load_ite', type=int, default=1200000)
     parser.add_argument('--ppc_load_dir', type=str, default=None)
 
     return parser.parse_args()

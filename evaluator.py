@@ -356,8 +356,9 @@ class EvaluatorWithCost(object):
         ep_cost_rate = episode_cost / episode_len
         for key in info_list[0].keys():
             info_key = list(map(lambda x: x[key], info_list))
-            mean_key = sum(info_key) / len(info_key)
-            info_dict.update({key: mean_key})
+            if not isinstance(info_key, list):
+                mean_key = sum(info_key) / len(info_key)
+                info_dict.update({key: mean_key})
         info_dict.update(dict(obs_list=np.array(obs_list),
                               action_list=np.array(action_list),
                               reward_list=np.array(reward_list),
