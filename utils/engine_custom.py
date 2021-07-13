@@ -1330,7 +1330,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
             raise NotImplementedError
 
 
-    def adaptive_safety_index(self, k=2, sigma=0.04, n=2):
+    def adaptive_safety_index(self, k=1, sigma=0.04, n=2):
         '''
         synthesis the safety index that ensures the valid solution 
         '''
