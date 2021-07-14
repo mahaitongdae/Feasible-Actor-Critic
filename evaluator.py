@@ -300,6 +300,7 @@ class EvaluatorWithCost(object):
         cost_list = []
         qc_list = []
         lam_list = []
+        phi_list = []
         ep_phi_increase_times = 0
         obs = self.env.reset()
         if render: self.env.render()
@@ -352,6 +353,7 @@ class EvaluatorWithCost(object):
                 cost_list.append(cost)
                 if delta_phi > 0:
                     ep_phi_increase_times += 1
+                phi_list.append(self.env.adaptive_safety_index())
         episode_return = sum(reward_list)
         episode_len = len(reward_list)
         info_dict = dict()
@@ -359,11 +361,13 @@ class EvaluatorWithCost(object):
         ep_cost_rate = episode_cost / episode_len
         for key in info_list[0].keys():
             info_key = list(map(lambda x: x[key], info_list))
-            mean_key = sum(info_key) / len(info_key)
-            info_dict.update({key: mean_key})
+            if not isinstance(info_key, list):
+                mean_key = sum(info_key) / len(info_key)
+                info_dict.update({key: mean_key})
         info_dict.update(dict(obs_list=np.array(obs_list),
                               action_list=np.array(action_list),
                               reward_list=np.array(reward_list),
+                              phi_list=np.array(phi_list),
                               episode_return=episode_return,
                               episode_len=episode_len,
                               episode_cost=episode_cost,
@@ -379,6 +383,8 @@ class EvaluatorWithCost(object):
             metrics_list.append(self.metrics_for_an_episode(episode_info))
         out = {}
         for key in metrics_list[0].keys():
+            if key == 'phi_list':
+                continue
             value_list = list(map(lambda x: x[key], metrics_list))
             out.update({key: sum(value_list)/len(value_list)})
         return metrics_list, out
@@ -474,11 +480,12 @@ class EvaluatorWithCost(object):
             episode_cost = episode_info['episode_cost']
             ep_cost_rate = episode_info['ep_cost_rate']
             ep_phi_increase_times = episode_info['ep_phi_increase_times']
+            phi_list = episode_info['phi_list']
             key_list.extend(['episode_cost', 'ep_cost_rate'])
             value_list.extend([episode_cost, ep_cost_rate])
             if 'Custom' in self.args.env_id:
-                key_list.extend(['ep_phi_increase_times'])
-                value_list.extend([ep_phi_increase_times])
+                key_list.extend(['ep_phi_increase_times', 'phi_list'])
+                value_list.extend([ep_phi_increase_times, phi_list])
 
         return dict(zip(key_list, value_list))
 
@@ -497,7 +504,10 @@ class EvaluatorWithCost(object):
                 n_metrics_list, mean_metric_dict = self.run_n_episodes_parallel(self.args.num_eval_episode)
             with self.writer.as_default():
                 for key, val in mean_metric_dict.items():
-                    self.tf.summary.scalar("evaluation/{}".format(key), val, step=self.iteration)
+                    try:
+                        self.tf.summary.scalar("evaluation/{}".format(key), val, step=self.iteration)
+                    except:
+                        pass
                 for key, val in self.get_stats().items():
                     self.tf.summary.scalar("evaluation/{}".format(key), val, step=self.iteration)
                 self.writer.flush()
