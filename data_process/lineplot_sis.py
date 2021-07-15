@@ -58,13 +58,10 @@ def load_from_tf1_event(eval_dir, tag2plot):
     return data_in_one_run_of_one_alg
 
 def help_func():
-    tag2plot = ['ep_phi_increase_times']
+    tag2plot = ['episode_return']
     alg_list = ['FSAC'] # 'SAC',
-    lbs = ['FSAC'] # 'SAC',
+    lbs = ['episode_return'] # 'SAC',
     task = ['Goal_hazards0.15_4']
-    #todo: CarGoal: sac
-    #todo: CarButton: sac choose better fac
-    # todo: CarPush: ???
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
     dir_str = '../data_process/data2plot' # .format(algo name) # /data2plot
@@ -114,9 +111,10 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
         fontsize = 16
         f1 = plt.figure(1, figsize=figsize)
         ax1 = f1.add_axes(axes_size)
-        sns.lineplot(x="iteration", y=tag, hue="algorithm",
-                     data=total_dataframe, linewidth=2, palette=palette
-                     )
+        for tag in tag2plot:
+            sns.lineplot(x="iteration", y=tag, hue="algorithm",
+                         data=total_dataframe, linewidth=2, palette=palette
+                         )
         base = 0
         basescore = sns.lineplot(x=[0., 200.], y=[base, base], linewidth=2, color='black', linestyle='--')
         print(ax1.lines[0].get_data())
@@ -197,63 +195,39 @@ def get_datasets(logdir, tag2plot, alg, condition=None, smooth=SMOOTHFACTOR2, nu
 
     return data.loc[:, slice_list]
 
-def load_from_txt(logdir='../results/CPO/PointGoal/pg1', tag=['episode_cost']):
-    data = get_datasets(logdir, tag, alg='CPO')
-    a = 1
-# def get_all_datasets(all_logdirs, legend=None, select=None, exclude=None):
-#     """
-#     For every entry in all_logdirs,
-#         1) check if the entry is a real directory and if it is,
-#            pull data from it;
-#
-#         2) if not, check to see if the entry is a prefix for a
-#            real directory, and pull data from that.
-#     """
-#     logdirs = []
-#     for logdir in all_logdirs:
-#         if osp.isdir(logdir) and logdir[-1]=='/':
-#             logdirs += [logdir]
-#         else:
-#             basedir = osp.dirname(logdir)
-#             fulldir = lambda x : osp.join(basedir, x)
-#             prefix = logdir.split('/')[-1]
-#             listdir= os.listdir(basedir)
-#             logdirs += sorted([fulldir(x) for x in listdir if prefix in x])
-#
-#     """
-#     Enforce selection rules, which check logdirs for certain substrings.
-#     Makes it easier to look at graphs from particular ablations, if you
-#     launch many jobs at once with similar names.
-#     """
-#     if select is not None:
-#         logdirs = [log for log in logdirs if all(x in log for x in select)]
-#     if exclude is not None:
-#         logdirs = [log for log in logdirs if all(not(x in log) for x in exclude)]
-#
-#     # Verify logdirs
-#     print('Plotting from...\n' + '='*DIV_LINE_WIDTH + '\n')
-#     for logdir in logdirs:
-#         print(logdir)
-#     print('\n' + '='*DIV_LINE_WIDTH)
-#
-#     # Make sure the legend is compatible with the logdirs
-#     assert not(legend) or (len(legend) == len(logdirs)), \
-#         "Must give a legend title for each set of experiments."
-#
-#     # Load data from logdirs
-#     data = []
-#     if legend:
-#         for log, leg in zip(logdirs, legend):
-#             data += get_datasets(log, leg)
-#     else:
-#         for log in logdirs:
-#             data += get_datasets(log)
-#     return data
+def plot_phi_curve_in_single_run(log):
+    data = np.load(log, allow_pickle=True)
+    df_list = []
+    for idx in range(data.shape[0]):
+        data_dict = data[idx]
+        data_dict.update(dict(step = np.arange(1000), run=idx))
+        df_list.append(pd.DataFrame(data[idx]))
+    total_dataframe = df_list[0].append(df_list[1:], ignore_index=True) if len(df_list) > 1 else df_list[0]
+    figsize = (9, 3)
+    axes_size = [0.05, 0.22, 0.93, 0.75]  # if env == 'path_tracking_env' else [0.095, 0.11, 0.905, 0.89]
+    fontsize = 16
+    f1 = plt.figure(1, figsize=figsize)
+    ax1 = f1.add_axes(axes_size)
+    # for tag in tag2plot:
+    sns.lineplot(x="step", y='phi_list', hue="run",
+                 data=total_dataframe, linewidth=2, palette = "bright"
+                 )
+    base = 0
+    basescore = sns.lineplot(x=[0., 1000.], y=[base, base], linewidth=2, color='black', linestyle='--')
+    ax1.set_ylabel('')
+    ax1.set_xlabel("Step", fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
+    plt.xticks(fontsize=fontsize)
+    # plt.show()
+    fig_name = '../data_process/figure/phi.png'
+    plt.savefig(fig_name)
+
+
+
 
 
 
 if __name__ == '__main__':
     # env = 'inverted_pendulum_env'  # inverted_pendulum_env path_tracking_env
-    plot_eval_results_of_all_alg_n_runs()
-    # load_from_tf1_event()
-    # load_from_txt()
+    # plot_eval_results_of_all_alg_n_runs()
+    plot_phi_curve_in_single_run('../data_process/data2plot/logs/evaluator/n_metrics_list_ite2000000.npy')
