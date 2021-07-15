@@ -270,8 +270,6 @@ class SACLearnerWithCost(object):
         with self.target_timer:
             target, cost_target = self.compute_clipped_double_q_target()
 
-
-
         self.batch_data.update(dict(batch_targets=target, batch_cost_targets=cost_target))
         if self.args.buffer_type != 'normal':
             td_error, cost_td_error = self.compute_td_error()
@@ -460,6 +458,7 @@ class SACLearnerWithCost(object):
                 QC = self.policy_with_value.compute_QC1(processed_obses, actions)
                 if self.args.mlp_lam:
                     lams = self.policy_with_value.compute_lam(processed_obses)
+                    lams = self.tf.clip_by_value(lams, 0, 100)
                     penalty_terms = self.tf.reduce_mean(self.tf.multiply(self.tf.stop_gradient(lams), QC))
                 else:
                     lams = self.policy_with_value.log_lam
@@ -496,6 +495,7 @@ class SACLearnerWithCost(object):
             violation_rate = self.tf.reduce_sum(violation_count) / self.args.replay_batch_size
             if self.args.mlp_lam:
                 lams = self.policy_with_value.compute_lam(processed_obses)
+                lams = self.tf.clip_by_value(lams, 0, 100)
                 complementary_slackness = self.tf.reduce_mean(
                     self.tf.multiply(lams, self.tf.stop_gradient(violation)))
 

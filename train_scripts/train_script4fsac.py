@@ -116,7 +116,8 @@ def built_FSAC_parser():
     parser.add_argument('--mlp_lam', default=True)
     parser.add_argument('--double_QC', type=bool, default=False)
     parser.add_argument('--adaptive_safety_index', type=bool, default=True)
-
+    parser.add_argument('--adaptive_si_start', type=int, default=1000000)
+    parser.add_argument('--adaptive_si_interval', type=int, default=24)
 
     # worker
     parser.add_argument('--batch_size', type=int, default=1024)
@@ -134,7 +135,7 @@ def built_FSAC_parser():
     # tester and evaluator
     parser.add_argument('--num_eval_episode', type=int, default=5)
     parser.add_argument('--eval_log_interval', type=int, default=1)
-    parser.add_argument('--fixed_steps', type=int, default=1000)
+    parser.add_argument('--fixed_steps', type=int, default=None)
     parser.add_argument('--eval_render', type=bool, default=False)
     num_eval_episode = parser.parse_args().num_eval_episode
     parser.add_argument('--num_eval_agent', type=int, default=1)
@@ -146,26 +147,27 @@ def built_FSAC_parser():
     parser.add_argument('--value_num_hidden_layers', type=int, default=2)
     parser.add_argument('--value_num_hidden_units', type=int, default=256)
     parser.add_argument('--value_hidden_activation', type=str, default='elu')
-    parser.add_argument('--value_lr_schedule', type=list, default=[8e-5, 2000000, 8e-6])
-    parser.add_argument('--cost_value_lr_schedule', type=list, default=[8e-5, 2000000, 8e-6])
+    parser.add_argument('--value_lr_schedule', type=list, default=[8e-5, 4000000, 1e-6])
+    parser.add_argument('--cost_value_lr_schedule', type=list, default=[8e-5, 4000000, 1e-6])
     parser.add_argument('--policy_model_cls', type=str, default='MLP')
     parser.add_argument('--policy_num_hidden_layers', type=int, default=2)
     parser.add_argument('--policy_num_hidden_units', type=int, default=256)
     parser.add_argument('--policy_hidden_activation', type=str, default='elu')
     parser.add_argument('--policy_out_activation', type=str, default='linear')
-    parser.add_argument('--policy_lr_schedule', type=list, default=[3e-5, 1000000, 3e-6])
-    parser.add_argument('--lam_lr_schedule', type=list, default=[5e-6, 300000, 3e-6])
+    parser.add_argument('--policy_lr_schedule', type=list, default=[3e-5, 2000000, 1e-6])
+    parser.add_argument('--lam_lr_schedule', type=list, default=[5e-6, 300000, 1e-6])
     parser.add_argument('--alpha', default='auto')  # 'auto' 0.02
     alpha = parser.parse_args().alpha
     if alpha == 'auto':
         parser.add_argument('--target_entropy', type=float, default=-2)
-    parser.add_argument('--alpha_lr_schedule', type=list, default=[8e-5, 1000000, 8e-6])
+    parser.add_argument('--alpha_lr_schedule', type=list, default=[8e-5, 2000000, 8e-6])
+    parser.add_argument('--k_lr_schedule', type=list, default=[3e-6, 100000, 1e-6])
     parser.add_argument('--policy_only', type=bool, default=False)
     parser.add_argument('--double_Q', type=bool, default=True)
     parser.add_argument('--target', type=bool, default=True)
     parser.add_argument('--tau', type=float, default=0.005)
     parser.add_argument('--delay_update', type=int, default=2)
-    parser.add_argument('--dual_ascent_interval', type=int, default=6)
+    parser.add_argument('--dual_ascent_interval', type=int, default=12)
     parser.add_argument('--deterministic_policy', type=bool, default=False)
     parser.add_argument('--action_range', type=float, default=10.0)
     parser.add_argument('--mu_bias', type=float, default=0.0)
@@ -188,8 +190,8 @@ def built_FSAC_parser():
     parser.add_argument('--num_buffers', type=int, default=NUM_BUFFER)
     parser.add_argument('--max_weight_sync_delay', type=int, default=300)
     parser.add_argument('--grads_queue_size', type=int, default=25)
-    parser.add_argument('--grads_max_reuse', type=int, default=1)
-    parser.add_argument('--eval_interval', type=int, default=5000) # 1000
+    parser.add_argument('--grads_max_reuse', type=int, default=0)
+    parser.add_argument('--eval_interval', type=int, default=10000) # 1000
     parser.add_argument('--save_interval', type=int, default=200000) # 200000
     parser.add_argument('--log_interval', type=int, default=100) # 100
 

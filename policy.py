@@ -597,7 +597,8 @@ class PolicyWithAdaSafetyIndex(PolicyWithMu):
                  policy_only, double_Q, target, tau, delay_update,
                  deterministic_policy, action_range, lam_lr_schedule, dual_ascent_interval=1, **kwargs)
 
-        k_lr = 3e-4
+        k_lr_schedule = kwargs.get('k_lr_schedule')
+        k_lr = PolynomialDecay(*k_lr_schedule)
         self.K = LamModel(name='k', init_var=1.0)
         self.k_optimizer = self.tf.keras.optimizers.Adam(k_lr, name='k_opt')
         self.adaptive_safety_index = kwargs.get('adaptive_safety_index')
@@ -636,9 +637,9 @@ class PolicyWithAdaSafetyIndex(PolicyWithMu):
                     if self.alpha == 'auto':
                         alpha_grad = grads[-2:-1]
                         self.alpha_optimizer.apply_gradients(zip(alpha_grad, self.alpha_model.trainable_weights))
-                    if self.adaptive_safety_index:
-                        k_grad = grads[-1:]
-                        self.k_optimizer.apply_gradients(zip(k_grad, self.K.trainable_weights))
+                if iteration % self.adaptive_si_interval == 0 and self.adaptive_safety_index and iteration > self.adaptive_si_start:
+                    k_grad = grads[-1:]
+                    self.k_optimizer.apply_gradients(zip(k_grad, self.K.trainable_weights))
             else:
                 q_weights_len = len(self.Q1.trainable_weights)
                 policy_weights_len = len(self.policy.trainable_weights)
