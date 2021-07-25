@@ -604,6 +604,8 @@ class PolicyWithAdaSafetyIndex(PolicyWithMu):
         self.adaptive_safety_index = kwargs.get('adaptive_safety_index')
         self.models += (self.sis_para,)
         self.optimizers += (self.k_optimizer,)
+        self.adaptive_si_interval = kwargs.get('adaptive_si_interval')
+        self.adaptive_si_start = kwargs.get('adaptive_si_start')
 
     @tf.function
     def apply_gradients(self, iteration, grads):
@@ -639,6 +641,7 @@ class PolicyWithAdaSafetyIndex(PolicyWithMu):
                         self.alpha_optimizer.apply_gradients(zip(alpha_grad, self.alpha_model.trainable_weights))
                 if iteration % self.adaptive_si_interval == 0 and self.adaptive_safety_index and iteration > self.adaptive_si_start:
                     k_grad = grads[-1:]
+                    self.tf.print(k_grad)
                     self.k_optimizer.apply_gradients(zip(k_grad, self.sis_para.trainable_weights))
             else:
                 q_weights_len = len(self.Q1.trainable_weights)

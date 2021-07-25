@@ -310,7 +310,7 @@ class SACLearnerWithCost(object):
         '''
         synthesis the safety index that ensures the valid solution
         '''
-        sigma, k, n = self.policy_with_value.get_k.numpy()
+        sigma, k, n = self.policy_with_value.get_sis_paras.numpy()
         sis_infos = self.batch_data['batch_sis_infos']
         # sis_infos shape: [batch size, 2(t,tp1), 4(hazards num), 2(d, dotd)]
         d_t = sis_infos[:, 0, :, 0]
@@ -533,7 +533,8 @@ class SACLearnerWithCost(object):
 
 
         with self.tf.GradientTape() as tape:
-            sigma, k, n = self.policy_with_value.get_k.numpy()
+            sis_paras = self.policy_with_value.get_sis_paras
+            sigma, k, n = sis_paras[0], sis_paras[1], sis_paras[2]
             phi_t = (sigma + hazards_size) ** n - d_t ** n - k * dotd_t
             phi_t = self.tf.clip_by_value(self.tf.reduce_max(phi_t, axis=1), 0, 100)
 
@@ -541,12 +542,12 @@ class SACLearnerWithCost(object):
             phi_tp1 = self.tf.reduce_max(phi_tp1, axis=1)
             delta_phi = phi_tp1 - phi_t
 
-            k_loss = self.tf.reduce_mean(self.tf.where(delta_phi > 0, delta_phi, self.tf.zeros_like(delta_phi)))
+            sis_paras_loss = self.tf.reduce_mean(self.tf.where(delta_phi > 0, delta_phi, self.tf.zeros_like(delta_phi)))
 
-        with self.tf.name_scope('k_gradient') as scope:
-            k_gradient = tape.gradient(k_loss, self.policy_with_value.sis_para.trainable_weights)
+        with self.tf.name_scope('sis_paras_gradient') as scope:
+            sis_paras_gradient = tape.gradient(sis_paras_loss, self.policy_with_value.sis_para.trainable_weights)
 
-            return k, k_loss, k_gradient
+            return (sigma, k, n), sis_paras_loss, sis_paras_gradient
 
 
 
@@ -612,8 +613,9 @@ class SACLearnerWithCost(object):
             lam_gradient, lam_gradient_norm = self.tf.clip_by_global_norm(lam_gradient, self.args.lam_gradient_clip_norm)
 
         with self.k_gradient_timer:
-            k, k_loss, k_gradient = self.k_forward_and_backward()
-            k_gradient, k_gradient_norm = self.tf.clip_by_global_norm(k_gradient, self.args.gradient_clip_norm)
+            sis_paras, sis_paras_loss, sis_paras_gradient = self.k_forward_and_backward()
+            sis_paras_gradient, sis_paras_gradient_norm = self.tf.clip_by_global_norm(sis_paras_gradient,
+                                                                                      self.args.gradient_clip_norm)
 
         self.stats.update(dict(
             iteration=iteration,
@@ -635,9 +637,11 @@ class SACLearnerWithCost(object):
             qc_gradient_norm1=qc_gradient_norm1.numpy(),
             # qc_gradient_norm2=qc_gradient_norm2.numpy(),
             policy_gradient_norm=policy_gradient_norm.numpy(),
-            safety_index_k = k.numpy(),
-            safety_index_k_loss=k_loss.numpy(),
-            safety_index_k_gradient_norm = k_gradient_norm.numpy()
+            safety_index_margin=sis_paras[0].numpy(),
+            safety_index_k = sis_paras[1].numpy(),
+            safety_index_power=sis_paras[2].numpy(),
+            safety_index_k_loss=sis_paras_loss.numpy(),
+            safety_index_k_gradient_norm = sis_paras_gradient_norm.numpy()
         ))
         if self.args.constrained:
             self.stats.update(dict(
@@ -672,10 +676,10 @@ class SACLearnerWithCost(object):
                                    alpha_gradient_norm=alpha_gradient_norm.numpy(),
                                    alpha_time=self.alpha_timer.mean))
             gradient_tensor = q_gradient1 + q_gradient2 + qc_gradient1 + qc_gradient2 \
-                              + policy_gradient + lam_gradient + alpha_gradient + k_gradient
+                              + policy_gradient + lam_gradient + alpha_gradient + sis_paras_gradient
         else:
             gradient_tensor = q_gradient1 + q_gradient2 + qc_gradient1 + qc_gradient2 \
-                              + policy_gradient + lam_gradient + k_gradient
+                              + policy_gradient + lam_gradient + sis_paras_gradient
 
         return list(map(lambda x: x.numpy(), gradient_tensor))
 

@@ -324,7 +324,7 @@ class EvaluatorWithCost(object):
                 reward_list.append(reward[0])
                 info_list.append(info[0])
                 cost_list.append(cost)
-                phi_list.append(self.env.adaptive_safety_index(k=self.policy_with_value.get_k))
+                phi_list.append(self.env.phi)
         else:
             while not done:
                 processed_obs = self.preprocessor.tf_process_obses(obs)
@@ -351,7 +351,7 @@ class EvaluatorWithCost(object):
                 cost_list.append(cost)
                 if delta_phi > 0:
                     ep_phi_increase_times += 1
-                phi_list.append(self.env.adaptive_safety_index(k=self.policy_with_value.get_k))
+                phi_list.append(self.env.phi)
         episode_return = sum(reward_list)
         episode_len = len(reward_list)
         info_dict = dict()
@@ -494,6 +494,7 @@ class EvaluatorWithCost(object):
         self.preprocessor.set_params(params)
 
     def run_evaluation(self, iteration):
+        self.env.set_sis_paras(self.policy_with_value.get_sis_paras.numpy())
         with self.eval_timer:
             self.iteration = iteration
             if self.args.num_eval_agent == 1:

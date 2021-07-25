@@ -19,9 +19,6 @@ import ray
 
 from buffer import *
 from evaluator import Evaluator, EvaluatorWithCost
-from learners.ampc import AMPCLearner
-from learners.mpg_learner import MPGLearner
-from learners.nadp import NADPLearner
 from learners.ndpg import NDPGLearner
 from learners.sac import SACLearner, SACLearnerWithCost
 from learners.td3 import TD3Learner
@@ -39,10 +36,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['OMP_NUM_THREADS'] = '1'
 NAME2WORKERCLS = dict([('OffPolicyWorker', OffPolicyWorker),
                        ('OffPolicyWorkerWithCost', OffPolicyWorkerWithCost)])
-NAME2LEARNERCLS = dict([('MPG', MPGLearner),
-                        ('AMPC', AMPCLearner),
-                        ('NADP', NADPLearner),
-                        ('NDPG', NDPGLearner),
+NAME2LEARNERCLS = dict([('NDPG', NDPGLearner),
                         ('TD3', TD3Learner),
                         ('SAC', SACLearnerWithCost),
                         ('FSAC', SACLearnerWithCost),
@@ -100,7 +94,7 @@ def built_FSAC_parser():
     parser.add_argument('--demo', type=bool, default=False)
 
     # env
-    parser.add_argument('--env_id', default='Safexp-CustomGoal2-v0')
+    parser.add_argument('--env_id', default='Unicycle-v0')
     parser.add_argument('--num_agent', type=int, default=1)
     parser.add_argument('--num_future_data', type=int, default=0)
 
@@ -177,7 +171,7 @@ def built_FSAC_parser():
     # preprocessor
     parser.add_argument('--obs_ptype', type=str, default='scale')
     num_future_data = parser.parse_args().num_future_data
-    parser.add_argument('--obs_scale', type=list, default=None)
+    parser.add_argument('--obs_scale', type=list, default=[1.0, 1.0, 1.0, 1 / 3.14])
     parser.add_argument('--rew_ptype', type=str, default='scale')
     parser.add_argument('--rew_scale', type=float, default=1.)
     parser.add_argument('--rew_shift', type=float, default=0.)
