@@ -11,7 +11,7 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.keras.optimizers.schedules import PolynomialDecay
 
-from model import MLPNet, AlphaModel, LamModel
+from model import MLPNet, AlphaModel, LamModel, SiSParaModel
 
 NAME2MODELCLS = dict([('MLP', MLPNet),])
 
@@ -599,10 +599,10 @@ class PolicyWithAdaSafetyIndex(PolicyWithMu):
 
         k_lr_schedule = kwargs.get('k_lr_schedule')
         k_lr = PolynomialDecay(*k_lr_schedule)
-        self.K = LamModel(name='k', init_var=1.0)
+        self.sis_para = SiSParaModel(name='k', init_var=[0.1, 1.0, 2.0]) # margin, k, power
         self.k_optimizer = self.tf.keras.optimizers.Adam(k_lr, name='k_opt')
         self.adaptive_safety_index = kwargs.get('adaptive_safety_index')
-        self.models += (self.K,)
+        self.models += (self.sis_para,)
         self.optimizers += (self.k_optimizer,)
 
     @tf.function
@@ -639,7 +639,7 @@ class PolicyWithAdaSafetyIndex(PolicyWithMu):
                         self.alpha_optimizer.apply_gradients(zip(alpha_grad, self.alpha_model.trainable_weights))
                 if iteration % self.adaptive_si_interval == 0 and self.adaptive_safety_index and iteration > self.adaptive_si_start:
                     k_grad = grads[-1:]
-                    self.k_optimizer.apply_gradients(zip(k_grad, self.K.trainable_weights))
+                    self.k_optimizer.apply_gradients(zip(k_grad, self.sis_para.trainable_weights))
             else:
                 q_weights_len = len(self.Q1.trainable_weights)
                 policy_weights_len = len(self.policy.trainable_weights)
@@ -655,11 +655,11 @@ class PolicyWithAdaSafetyIndex(PolicyWithMu):
                         self.update_Q1_target()
                     if self.adaptive_safety_index:
                         k_grad = grads[-1:]
-                        self.k_optimizer.apply_gradients(zip(k_grad, self.K.trainable_weights))
+                        self.k_optimizer.apply_gradients(zip(k_grad, self.sis_para.trainable_weights))
 
     @property
-    def get_k(self):
-        return tf.clip_by_value(self.K.var, 0.1, 5)
+    def get_sis_paras(self):
+        return tf.clip_by_value(self.sis_para.var, [0.1, 0.5, 0.1], [0.5, 3.0, 2.0])
 
 
 

@@ -306,21 +306,21 @@ class SACLearnerWithCost(object):
 
         return clipped_double_q_target, np.clip(clipped_double_qc_target, 0, np.inf)
 
-    def compute_delta_safety_index(self, sigma=0.04, n=2, hazards_size=0.15):
+    def compute_delta_safety_index(self, hazards_size=0.5):
         '''
         synthesis the safety index that ensures the valid solution
         '''
-        k = self.policy_with_value.get_k.numpy()
+        sigma, k, n = self.policy_with_value.get_k.numpy()
         sis_infos = self.batch_data['batch_sis_infos']
         # sis_infos shape: [batch size, 2(t,tp1), 4(hazards num), 2(d, dotd)]
         d_t = sis_infos[:, 0, :, 0]
         dotd_t = sis_infos[:, 0, :, 1]
         d_tp1 = sis_infos[:, 1, :, 0]
         dotd_tp1 = sis_infos[:, 1, :, 1]
-        phi_t = sigma + hazards_size ** n - d_t ** n - k * dotd_t
+        phi_t = (sigma + hazards_size) ** n - d_t ** n - k * dotd_t
         phi_t = np.clip(np.max(phi_t, axis=1), 0, np.inf)
 
-        phi_tp1 = sigma + hazards_size ** n - d_tp1 ** n - k * dotd_tp1
+        phi_tp1 = (sigma + hazards_size) ** n - d_tp1 ** n - k * dotd_tp1
         phi_tp1 = np.max(phi_tp1, axis=1)
         delta_phi = phi_tp1 - phi_t
         self.batch_data.update(dict(batch_delta_phi=delta_phi))
@@ -523,7 +523,7 @@ class SACLearnerWithCost(object):
             return alpha_loss, self.tf.exp(log_alpha), alpha_gradient
 
     @tf.function
-    def k_forward_and_backward(self, sigma=0.04, hazards_size=0.15, n=2):
+    def k_forward_and_backward(self, hazards_size=0.5):
         sis_infos = self.batch_data['batch_sis_infos']
         # sis_infos shape: [batch size, 2(t,tp1), 4(hazards num), 2(d, dotd)]
         d_t = sis_infos[:, 0, :, 0]
@@ -531,19 +531,20 @@ class SACLearnerWithCost(object):
         d_tp1 = sis_infos[:, 1, :, 0]
         dotd_tp1 = sis_infos[:, 1, :, 1]
 
+
         with self.tf.GradientTape() as tape:
-            k = self.policy_with_value.get_k
-            phi_t = sigma + hazards_size ** n - d_t ** n - k * dotd_t
+            sigma, k, n = self.policy_with_value.get_k.numpy()
+            phi_t = (sigma + hazards_size) ** n - d_t ** n - k * dotd_t
             phi_t = self.tf.clip_by_value(self.tf.reduce_max(phi_t, axis=1), 0, 100)
 
-            phi_tp1 = sigma + hazards_size ** n - d_tp1 ** n - k * dotd_tp1
+            phi_tp1 = (sigma + hazards_size) ** n - d_tp1 ** n - k * dotd_tp1
             phi_tp1 = self.tf.reduce_max(phi_tp1, axis=1)
             delta_phi = phi_tp1 - phi_t
 
             k_loss = self.tf.reduce_mean(self.tf.where(delta_phi > 0, delta_phi, self.tf.zeros_like(delta_phi)))
 
         with self.tf.name_scope('k_gradient') as scope:
-            k_gradient = tape.gradient(k_loss, self.policy_with_value.K.trainable_weights)
+            k_gradient = tape.gradient(k_loss, self.policy_with_value.sis_para.trainable_weights)
 
             return k, k_loss, k_gradient
 

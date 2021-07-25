@@ -115,7 +115,13 @@ class UnicycleEnv(gym.Env):
         dt = 1 / self.fps
         dp = [self.goal[0] - self.state[0], self.goal[1] - self.state[1]]
         da = self.goal[3] - self.state[3]
-        a = np.arctan(dp[1] / dp[0])
+        a = np.arctan(dp[1] / (dp[0] + 1e-8))
+        if dp[1] > 0 and a < 0:
+            a += np.pi
+        elif dp[1] < 0 and a > 0:
+            a += np.pi
+        elif dp[1] < 0 and a < 0:
+            a += 2 * np.pi
         v = np.linalg.norm(dp, ord=2) / self.time_total #todo: time total always?
         v = max(min(v, 1), -1)
         vx = v * np.cos(a)
@@ -145,6 +151,19 @@ class UnicycleEnv(gym.Env):
         synthesis the safety index that ensures the valid solution
         '''
         # initialize safety index
+
+        '''
+        function phi(index::CollisionIndex, x, obs)
+            o = [obs.center; [0,0]]
+            d = sqrt((x[1]-o[1])^2 + (x[2]-o[2])^2)
+            dM = [x[1]-o[1], x[2]-o[2], x[3]*cos(x[4])-o[3], x[3]*sin(x[4])-o[4]]
+            dim = 2
+            dp = dM[[1,dim]]
+            dv = dM[[dim+1,dim*2]]
+            dot_d = dp'dv / d
+            return (index.margin + obs.radius)^index.phi_power - d^index.phi_power - index.dot_phi_coe*dot_d
+        end
+        '''
         phi = -1e8
         sis_info_t = self.sis_info.get('sis_data', [])
         sis_info_tp1 = []
@@ -215,6 +234,11 @@ class UnicycleEnv(gym.Env):
         next(ge)
         plt.text(text_x, text_y_start - 0.1 * next(ge), 'reward: {:.2f}m'.format(self.compute_reward()))
         plt.text(text_x, text_y_start - 0.1 * next(ge), 'cost: {:.2f}m'.format(self.compute_cost()))
+        next(ge)
+        d = self.sis_info.get('sis_data')[0][0]
+        dotd = self.sis_info.get('sis_data')[0][1]
+        plt.text(text_x, text_y_start - 0.1 * next(ge), 'd: {:.2f}m'.format(d))
+        plt.text(text_x, text_y_start - 0.1 * next(ge), 'dotd: {:.2f}m/s'.format(dotd))
         time.sleep(1)
         plt.show()
         plt.pause(0.01)
@@ -223,7 +247,7 @@ class UnicycleEnv(gym.Env):
 def try_env():
     env = UnicycleEnv()
     env.reset()
-    u = np.array([0.0,0.0])
+    u = np.array([-1.0,0.0])
     while True:
         env.step(u)
         env.render()
