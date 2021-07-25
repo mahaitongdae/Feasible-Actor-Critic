@@ -192,7 +192,7 @@ def built_FSAC_parser():
     # IO
     time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     env_id = parser.parse_args().env_id
-    task = env_id.split('-')[1]
+    task = env_id.split('-')[1] if env_id.startswith('Safexp') else env_id.split('-')[0]
     results_dir = '../results/FSAC/{task}/{experiment}-{time}'.format(task=task[:-1],
                                                                       experiment=task,
                                                                       time=time_now)

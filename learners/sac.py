@@ -623,6 +623,7 @@ class SACLearnerWithCost(object):
             pg_time=self.policy_gradient_timer.mean,
             target_time=self.target_timer.mean,
             lam_time=self.lam_gradient_timer.mean,
+            sis_paras_time=self.k_gradient_timer.mean,
             q_loss1=q_loss1.numpy(),
             q_loss2=q_loss2.numpy(),
             qc_loss1=qc_loss1.numpy(),
