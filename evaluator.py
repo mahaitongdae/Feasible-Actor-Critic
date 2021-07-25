@@ -473,14 +473,14 @@ class EvaluatorWithCost(object):
                                x_mse, theta_mse, xdot_mse, thetadot_mse,
                                x_mse_25, theta_mse_25, xdot_mse_25, thetadot_mse_25])
 
-        elif self.args.env_id[:4] == 'Safe':
+        elif self.args.env_id[:4] == 'Safe' or self.args.env_id in ['Unicycle-v0']:
             episode_cost = episode_info['episode_cost']
             ep_cost_rate = episode_info['ep_cost_rate']
             ep_phi_increase_times = episode_info['ep_phi_increase_times']
             phi_list = episode_info['phi_list']
             key_list.extend(['episode_cost', 'ep_cost_rate'])
             value_list.extend([episode_cost, ep_cost_rate])
-            if 'Custom' in self.args.env_id:
+            if 'Custom' in self.args.env_id or self.args.env_id in ['Unicycle-v0']:
                 key_list.extend(['ep_phi_increase_times', 'phi_list'])
                 value_list.extend([ep_phi_increase_times, phi_list])
 
