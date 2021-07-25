@@ -599,7 +599,7 @@ class SACLearnerWithCost(object):
 
 
         with self.policy_gradient_timer:
-            if iteration > self.args.penalty_start: # todo: add to hyper
+            if iteration > self.args.penalty_start:
                 policy_loss, penalty_terms, lagrangian, policy_gradient, policy_stats = self.policy_forward_and_backward(mb_obs)
             else:
                 policy_loss, penalty_terms, lagrangian, policy_gradient, policy_stats = self.policy_forward_and_backward_uncstr(
@@ -663,9 +663,6 @@ class SACLearnerWithCost(object):
 
         for (k, v) in dist_stats.items():
             self.stats.update({k: v.numpy()})
-
-
-
 
         if self.args.alpha == 'auto':
             with self.alpha_timer:

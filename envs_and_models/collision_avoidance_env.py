@@ -1,6 +1,3 @@
-# import julia
-# j = julia.Julia()
-# x = j.include("test.jl")
 import time
 
 import numpy as np
@@ -31,6 +28,7 @@ class UnicycleEnv(gym.Env):
                                                 high=np.array([10.0, 10.0, 2.0, np.pi]))
         self.action_space = gym.spaces.Box(low=np.array([-4.0, -np.pi])
                                            , high=np.array([4.0, np.pi]))
+        self.sis_paras = None
         # self.fig = plt.figure()
         plt.ion()
 
@@ -59,7 +57,11 @@ class UnicycleEnv(gym.Env):
         dot_s = np.array([dot_x, dot_y, dot_v, dot_theta])
         return dot_s
 
+    def set_sis_paras(self, sis_paras):
+        self.sis_paras = sis_paras
+
     def step(self, u):
+        u = np.multiply(u, self.action_space.high)
         u = self.filt_action(u)
         self.action = u
         dot_state = self.rk4(self.state, u, self.dt)
@@ -75,7 +77,7 @@ class UnicycleEnv(gym.Env):
         info = {}
         info.update(dict(cost=self.compute_cost()))
         old_phi = self.phi
-        self.phi = self.adaptive_safety_index()
+        self.phi = self.adaptive_safety_index()  # the self.phi only works with evaluator with fixed sis_paras
         if old_phi <= 0:
             delta_phi = max(self.phi, 0)
         else:
@@ -88,10 +90,11 @@ class UnicycleEnv(gym.Env):
 
     def reset(self):
         self.state = np.array([0., -1.5, 1. + random.random(),
-                               random.random() * np.pi / 2 + np.pi / 4]) # random.random() * np.pi / 2 + np.pi / 4
+                               random.random() * np.pi / 2 + np.pi / 4])  # random.random() * np.pi / 2 + np.pi / 4
         self.obstacle_center_y = random.random() - 0.5
         self.phi = self.adaptive_safety_index()
         self.ref = np.zeros_like(self.state)
+        self.step_cnt = 0
         return self.state
 
     def compute_reward(self, mode='linear'):
@@ -122,14 +125,13 @@ class UnicycleEnv(gym.Env):
             a += np.pi
         elif dp[1] < 0 and a < 0:
             a += 2 * np.pi
-        v = np.linalg.norm(dp, ord=2) / self.time_total #todo: time total always?
+        v = np.linalg.norm(dp, ord=2) / self.time_total  # todo: time total always?
         v = max(min(v, 1), -1)
         vx = v * np.cos(a)
         vy = v * np.sin(a)
         xref = [self.state[0] + vx * dt, self.state[1] + vy * dt, v, a]
         # xref[-1][2] = 0
         return xref
-
 
     def sample_action(self):
         action = np.random.uniform(-self.max_u, self.max_u)
@@ -146,7 +148,7 @@ class UnicycleEnv(gym.Env):
             x[3] = x[3] + 2 * np.pi
         return x
 
-    def adaptive_safety_index(self, k=2, sigma=0.04, n=2):
+    def adaptive_safety_index(self, sigma=0.04, k=2, n=2):
         '''
         synthesis the safety index that ensures the valid solution
         '''
@@ -164,6 +166,8 @@ class UnicycleEnv(gym.Env):
             return (index.margin + obs.radius)^index.phi_power - d^index.phi_power - index.dot_phi_coe*dot_d
         end
         '''
+        if self.sis_paras is not None:
+            sigma, k, n = self.sis_paras
         phi = -1e8
         sis_info_t = self.sis_info.get('sis_data', [])
         sis_info_tp1 = []
@@ -171,7 +175,7 @@ class UnicycleEnv(gym.Env):
         obstacle_pos = np.array([0, self.obstacle_center_y])
         rela_pos = self.state[:2] - obstacle_pos
         d = np.linalg.norm(rela_pos)
-        robot_to_hazard_angle = np.arctan((-rela_pos[1])/(-rela_pos[0]))
+        robot_to_hazard_angle = np.arctan((-rela_pos[1]) / (-rela_pos[0] + 1e-8))
         vel_rela_angle = self.state[-1] - robot_to_hazard_angle
         dotd = self.state[2] * np.cos(vel_rela_angle)
 
@@ -179,7 +183,7 @@ class UnicycleEnv(gym.Env):
         sis_info_tp1.append((d, dotd))
 
         # compute the safety index
-        phi_tmp = sigma + self.obstacle_radius ** n - d ** n - k * dotd
+        phi_tmp = (sigma + self.obstacle_radius) ** n - d ** n - k * dotd
         # select the largest safety index
         if phi_tmp > phi:
             phi = phi_tmp
@@ -200,17 +204,17 @@ class UnicycleEnv(gym.Env):
     def render(self, mode='human'):
         plt.clf()
         ax = plt.axes()
-        ax.add_patch(plt.Rectangle((-3.5,-2), 7.0, 7.0, edgecolor='black',
+        ax.add_patch(plt.Rectangle((-3.5, -2), 7.0, 7.0, edgecolor='black',
                                    facecolor='none', linewidth=2))
         plt.axis("equal")
         plt.axis('off')
         plt.arrow(self.state[0], self.state[1],
                   0.2 * np.cos(self.state[3]), 0.5 * np.sin(self.state[3]),
                   color='b', head_width=0.2)
-        plt.plot([0,0], [-2, 5],color='b')
-        plt.plot([-3,3], [0, 0], color='b')
+        plt.plot([0, 0], [-2, 5], color='b')
+        plt.plot([-3, 3], [0, 0], color='b')
         ax.add_patch(plt.Circle((0, self.obstacle_center_y), 0.5,
-                                 edgecolor='black',facecolor='none',))
+                                edgecolor='black', facecolor='none', ))
         ax.add_patch(plt.Circle(self.goal[:2], 0.2,
                                 edgecolor='none', facecolor='red', ))
         # self.fig.canvas.flush_events()
@@ -247,10 +251,12 @@ class UnicycleEnv(gym.Env):
 def try_env():
     env = UnicycleEnv()
     env.reset()
-    u = np.array([-1.0,0.0])
+    print(env.action_space.high)
+    u = np.array([-1.0, 0.0])
     while True:
         env.step(u)
         env.render()
+
 
 if __name__ == '__main__':
     # plt.ion()

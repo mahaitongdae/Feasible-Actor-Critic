@@ -303,7 +303,6 @@ class EvaluatorWithCost(object):
         phi_list = []
         ep_phi_increase_times = 0
         obs = self.env.reset()
-        if render: self.env.render()
         if steps is not None:
             for _ in range(steps):
                 processed_obs = self.preprocessor.tf_process_obses(obs)

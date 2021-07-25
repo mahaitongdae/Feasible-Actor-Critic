@@ -64,17 +64,17 @@ def built_FSAC_parser():
     mode = parser.parse_args().mode
 
     if mode == 'testing':
-        test_dir = '../results/FSAC/CustomGoal/CustomGoal2-2021-07-09-10-48-18'
+        test_dir = '../results/FSAC/Unicycle/Unicycle-2021-07-25-14-39-27'
         params = json.loads(open(test_dir + '/config.json').read())
         time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         test_log_dir = params['log_dir'] + '/tester/test-{}'.format(time_now)
         params.update(dict(test_dir=test_dir,
-                           test_iter_list=[400000],
+                           test_iter_list=[200000],
                            test_log_dir=test_log_dir,
                            num_eval_episode=100,
                            num_eval_agent=1,
                            eval_log_interval=1,
-                           fixed_steps=1000,
+                           fixed_steps=None,
                            eval_render=True))
         for key, val in params.items():
             parser.add_argument("-" + key, default=val)
@@ -110,11 +110,11 @@ def built_FSAC_parser():
     parser.add_argument('--mlp_lam', default=True)
     parser.add_argument('--double_QC', type=bool, default=False)
     parser.add_argument('--adaptive_safety_index', type=bool, default=True)
-    parser.add_argument('--adaptive_si_start', type=int, default=1000000)
+    parser.add_argument('--adaptive_si_start', type=int, default=500000)
     parser.add_argument('--adaptive_si_interval', type=int, default=24)
 
     # worker
-    parser.add_argument('--batch_size', type=int, default=1024)
+    parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--worker_log_interval', type=int, default=5)
     parser.add_argument('--explore_sigma', type=float, default=None)
 
@@ -163,7 +163,7 @@ def built_FSAC_parser():
     parser.add_argument('--delay_update', type=int, default=2)
     parser.add_argument('--dual_ascent_interval', type=int, default=12)
     parser.add_argument('--deterministic_policy', type=bool, default=False)
-    parser.add_argument('--action_range', type=float, default=10.0)
+    parser.add_argument('--action_range', type=float, default=1.0)
     parser.add_argument('--mu_bias', type=float, default=0.0)
     cost_lim = parser.parse_args().cost_lim
     parser.add_argument('--cost_bias', type=float, default=0.0)
@@ -192,8 +192,8 @@ def built_FSAC_parser():
     # IO
     time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     env_id = parser.parse_args().env_id
-    task = env_id.split('-')[1] if env_id.startswith('Safexp') else env_id.split('-')[0]
-    results_dir = '../results/FSAC/{task}/{experiment}-{time}'.format(task=task[:-1],
+    task = env_id.split('-')[1][:-1] if env_id.startswith('Safexp') else env_id.split('-')[0]
+    results_dir = '../results/FSAC/{task}/{experiment}-{time}'.format(task=task,
                                                                       experiment=task,
                                                                       time=time_now)
     parser.add_argument('--result_dir', type=str, default=results_dir)
