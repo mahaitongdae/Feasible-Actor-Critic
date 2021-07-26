@@ -64,12 +64,12 @@ def built_FSAC_parser():
     mode = parser.parse_args().mode
 
     if mode == 'testing':
-        test_dir = '../results/FSAC/Unicycle/Unicycle-2021-07-25-14-39-27'
+        test_dir = '../results/FSAC/Unicycle/Unicycle-2021-07-25-16-42-42'
         params = json.loads(open(test_dir + '/config.json').read())
         time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         test_log_dir = params['log_dir'] + '/tester/test-{}'.format(time_now)
         params.update(dict(test_dir=test_dir,
-                           test_iter_list=[200000],
+                           test_iter_list=[1400000],
                            test_log_dir=test_log_dir,
                            num_eval_episode=100,
                            num_eval_agent=1,
