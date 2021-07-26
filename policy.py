@@ -599,7 +599,7 @@ class PolicyWithAdaSafetyIndex(PolicyWithMu):
 
         k_lr_schedule = kwargs.get('k_lr_schedule')
         k_lr = PolynomialDecay(*k_lr_schedule)
-        self.sis_para = SiSParaModel(name='k', init_var=[0.1, 1.0, 2.0]) # margin, k, power
+        self.sis_para = SiSParaModel(name='k', init_var=[0.3, 1.0, 1.0]) # margin, k, power
         self.k_optimizer = self.tf.keras.optimizers.Adam(k_lr, name='k_opt')
         self.adaptive_safety_index = kwargs.get('adaptive_safety_index')
         self.models += (self.sis_para,)
@@ -640,7 +640,7 @@ class PolicyWithAdaSafetyIndex(PolicyWithMu):
 
     @property
     def get_sis_paras(self):
-        return tf.clip_by_value(self.sis_para.var, [0.1, 0.5, 0.1], [0.5, 3.0, 2.0])
+        return tf.clip_by_value(self.sis_para.var, [0.0, 0.5, 0.1], [0.5, 3.0, 2.0])
 
 
 
