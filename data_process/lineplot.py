@@ -58,7 +58,7 @@ def load_from_tf1_event(eval_dir, tag2plot):
     return data_in_one_run_of_one_alg
 
 def help_func():
-    tag2plot = ['safety_index_power'] # , 'safety_index_margin', 'safety_index_power'
+    tag2plot = ['safety_index_k_loss'] # , 'safety_index_margin', 'safety_index_power'
     alg_list = [ 'FSAC-A'] # 'SACL', 'FSAC',
     lbs = [ 'power', ] # 'SAC', 'SACL', 'FAC',  'margin', 'power'
     task = ['Unicycle']
