@@ -295,7 +295,7 @@ class SACLearnerWithCost(object):
                                   (np.minimum(target_Q1_of_tp1, target_Q2_of_tp1)-alpha*logp_tp1.numpy())
         if self.args.mlp_lam:
             processed_cost = self.compute_delta_safety_index()
-            clipped_double_qc_target = processed_cost
+            clipped_double_qc_target = np.clip(processed_cost, -0.001, np.inf)
         else:
             processed_cost = self.batch_data['batch_costs']
             clipped_double_qc_target = np.clip(processed_cost +
@@ -610,15 +610,17 @@ class SACLearnerWithCost(object):
             lam_loss, complementary_slackness, lam_gradient, lams, lam_stats = self.lam_forward_and_backward(mb_obs, mb_actions)
             lam_gradient, lam_gradient_norm = self.tf.clip_by_global_norm(lam_gradient, self.args.lam_gradient_clip_norm)
 
-        if self.args.adaptive_safety_index:
-            with self.k_gradient_timer:
-                sis_paras, sis_paras_loss, sis_paras_gradient = self.k_forward_and_backward()
-                sis_paras_gradient, sis_paras_gradient_norm = self.tf.clip_by_global_norm(sis_paras_gradient,
-                                                                                          self.args.gradient_clip_norm)
-        else:
-            with self.k_gradient_timer:
-                sis_paras_gradient = self.tf.zeros([1, 3])
-                sis_paras_gradient_norm = self.tf.convert_to_tensor(0.0)
+        # if self.args.adaptive_safety_index:
+        with self.k_gradient_timer:
+            sis_paras, sis_paras_loss, sis_paras_gradient = self.k_forward_and_backward()
+            sis_paras_gradient, sis_paras_gradient_norm = self.tf.clip_by_global_norm(sis_paras_gradient,
+                                                                                  self.args.gradient_clip_norm)
+        # else:
+        #     with self.k_gradient_timer:
+        #         sis_paras = self.tf.zeros([3,])
+        #         sis_paras_gradient = self.tf.zeros([1, 3])
+        #         sis_paras_gradient_norm = self.tf.convert_to_tensor(0.0)
+        #         sis_paras_loss = self.tf.convert_to_tensor(0.0)
 
         self.stats.update(dict(
             iteration=iteration,

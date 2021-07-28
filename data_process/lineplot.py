@@ -13,7 +13,7 @@ from tensorboard.backend.event_processing import event_accumulator
 import json
 
 sns.set(style="darkgrid")
-SMOOTHFACTOR = 0.1
+SMOOTHFACTOR = 0.9
 SMOOTHFACTOR2 = 3
 DIV_LINE_WIDTH = 50
 txt_store_alg_list = ['CPO', 'PPO-Lagrangian']
@@ -58,16 +58,13 @@ def load_from_tf1_event(eval_dir, tag2plot):
     return data_in_one_run_of_one_alg
 
 def help_func():
-    tag2plot = ['episode_cost']
-    alg_list = ['FSAC','SAC-Lagrangian', 'CPO', 'PPO-Lagrangian'] # 'SAC',
-    lbs = ['FSAC','SAC-Lagrangian',  'CPO', 'PPO-Lagrangian'] # 'SAC',
-    task = ['CarButton']
-    #todo: CarGoal: sac
-    #todo: CarButton: sac choose better fac
-    # todo: CarPush: ???
+    tag2plot = ['episode_return']
+    alg_list = ['SACL', 'FSAC', 'FSAC-A'] # 'SAC',
+    lbs = ['SACL', 'FAC', 'FAC-A'] # 'SAC',
+    task = ['Unicycle']
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
-    dir_str = '../results/{}/{}' # .format(algo name) # /data2plot
+    dir_str = '../results/{}/{}/data2plot' # .format(algo name) # /data2plot
     return tag2plot, alg_list, task, lbs, palette, goal_perf_list, dir_str
 
 def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
@@ -77,7 +74,6 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
     for task in task_list:
         df_list = []
         for alg in alg_list:
-
             data2plot_dir = dir_str.format(alg, task)
             data2plot_dirs_list = dirs_dict_for_plot[alg] if dirs_dict_for_plot is not None else os.listdir(data2plot_dir)
             for num_run, dir in enumerate(data2plot_dirs_list):
@@ -95,17 +91,18 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
                     data_in_one_run_of_one_alg.update({'iteration': []})
                     for eval_summary in eval_summarys:
                         event = event_pb2.Event.FromString(eval_summary.numpy())
+                        step = event.step / 2 if alg == 'FSAC-A' else event.step
+                        if step > 3e5: continue
                         for v in event.summary.value:
                             t = tf.make_ndarray(v.tensor)
                             for tag in tag2plot:
                                 if tag == v.tag[11:]:
                                     data_in_one_run_of_one_alg[tag].append((1-SMOOTHFACTOR)*data_in_one_run_of_one_alg[tag][-1] + SMOOTHFACTOR*float(t)
                                                                            if data_in_one_run_of_one_alg[tag] else float(t))
-                                    data_in_one_run_of_one_alg['iteration'].append(int(event.step))
+                                    data_in_one_run_of_one_alg['iteration'].append(int(step))
                     len1, len2 = len(data_in_one_run_of_one_alg['iteration']), len(data_in_one_run_of_one_alg[tag2plot[0]])
                     period = int(len1/len2)
                     data_in_one_run_of_one_alg['iteration'] = [data_in_one_run_of_one_alg['iteration'][i*period]/10000. for i in range(len2)]
-
                     data_in_one_run_of_one_alg.update(dict(algorithm=alg, num_run=num_run))
                     df_in_one_run_of_one_alg = pd.DataFrame(data_in_one_run_of_one_alg)
                 df_list.append(df_in_one_run_of_one_alg)
@@ -115,17 +112,19 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
         fontsize = 16
         f1 = plt.figure(1, figsize=figsize)
         ax1 = f1.add_axes(axes_size)
-        sns.lineplot(x="iteration", y="episode_cost", hue="algorithm",
+        sns.lineplot(x="iteration", y=tag, hue="algorithm",
                      data=total_dataframe, linewidth=2, palette=palette
                      )
-        base = 40 if task == 'CarPush' else 100
-        basescore = sns.lineplot(x=[0., 300.], y=[base, base], linewidth=2, color='black', linestyle='--')
+        # base = 0 # if task == 'CarPush' else 100
+        # basescore = sns.lineplot(x=[0., 30.], y=[base, base], linewidth=2, color='black', linestyle='--')
         print(ax1.lines[0].get_data())
         ax1.set_ylabel('')
         ax1.set_xlabel("Iteration [x10000]", fontsize=fontsize)
         handles, labels = ax1.get_legend_handles_labels()
         labels = lbs
-        ax1.legend(handles=handles+[basescore.lines[-1]], labels=labels+['Constraint'], loc='upper right', frameon=False, fontsize=fontsize)
+        # handles = handles+[basescore.lines[-1]]
+        # labels = labels+['Constraint']
+        ax1.legend(handles=handles, labels=labels, loc='lower right', frameon=False, fontsize=fontsize)
         plt.yticks(fontsize=fontsize)
         plt.xticks(fontsize=fontsize)
         # plt.show()

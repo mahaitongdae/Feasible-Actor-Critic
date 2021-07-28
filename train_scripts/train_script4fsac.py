@@ -40,7 +40,8 @@ NAME2LEARNERCLS = dict([('NDPG', NDPGLearner),
                         ('TD3', TD3Learner),
                         ('SAC', SACLearnerWithCost),
                         ('FSAC', SACLearnerWithCost),
-                        ('SAC-Lagrangian', SACLearnerWithCost)
+                        ('FSAC-A', SACLearnerWithCost),
+                        ('SACL', SACLearnerWithCost)
                         ])
 NAME2BUFFERCLS = dict([('normal', ReplayBuffer),
                        ('priority', PrioritizedReplayBuffer),
@@ -80,7 +81,7 @@ def built_FSAC_parser(alg_name):
             parser.add_argument("-" + key, default=val)
         return parser.parse_args()
 
-    parser.add_argument('--motivation', type=str, default='sac lagrangian test')  # training testing
+    parser.add_argument('--motivation', type=str, default='add clip')  # training testing
 
     # trainer
     parser.add_argument('--policy_type', type=str, default='PolicyWithAdaSafetyIndex')
@@ -107,12 +108,12 @@ def built_FSAC_parser(alg_name):
     parser.add_argument('--lam_gradient_clip_norm', type=float, default=3.)
     parser.add_argument('--num_batch_reuse', type=int, default=1)
     parser.add_argument('--cost_lim', type=float, default=0.0)
-    parser.add_argument('--mlp_lam', default=False)
+    parser.add_argument('--mlp_lam', default=True)
     parser.add_argument('--double_QC', type=bool, default=False)
-    parser.add_argument('--adaptive_safety_index', type=bool, default=False)
-    parser.add_argument('--adaptive_si_start', type=int, default=500000)
+    parser.add_argument('--adaptive_safety_index', type=bool, default=True)
+    parser.add_argument('--adaptive_si_start', type=int, default=100000)
     parser.add_argument('--adaptive_si_interval', type=int, default=24)
-    parser.add_argument('--init_sis_paras', type=list, default=[0.7, 1.1, 0.3]) # # margin, k, power
+    parser.add_argument('--init_sis_paras', type=list, default=[0.3, 1.0, 1.0]) # # margin, k, power
 
     # worker
     parser.add_argument('--batch_size', type=int, default=128)
@@ -150,7 +151,7 @@ def built_FSAC_parser(alg_name):
     parser.add_argument('--policy_hidden_activation', type=str, default='elu')
     parser.add_argument('--policy_out_activation', type=str, default='linear')
     parser.add_argument('--policy_lr_schedule', type=list, default=[3e-5, 2000000, 1e-6])
-    parser.add_argument('--lam_lr_schedule', type=list, default=[5e-6, 300000, 1e-6])
+    parser.add_argument('--lam_lr_schedule', type=list, default=[8e-6, 300000, 1e-6])
     parser.add_argument('--alpha', default='auto')  # 'auto' 0.02
     alpha = parser.parse_args().alpha
     if alpha == 'auto':
@@ -209,8 +210,7 @@ def built_FSAC_parser(alg_name):
     return parser.parse_args()
 
 def built_parser(alg_name):
-    if alg_name == 'FSAC':
-        args = built_FSAC_parser()
+    args = built_FSAC_parser(alg_name)
     if 'Custom' in args.env_id:
         from utils.custom_env_utils import register_custom_env
         register_custom_env()
@@ -262,4 +262,4 @@ def main(alg_name):
 
 
 if __name__ == '__main__':
-    main('FSAC')
+    main('FSAC-A')
