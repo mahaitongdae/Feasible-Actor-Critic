@@ -57,7 +57,7 @@ NUM_WORKER = 10
 NUM_LEARNER = 10
 NUM_BUFFER = 10
 
-def built_FSAC_parser():
+def built_FSAC_parser(alg_name):
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--mode', type=str, default='training') # training testing
@@ -99,10 +99,10 @@ def built_FSAC_parser():
     parser.add_argument('--num_future_data', type=int, default=0)
 
     # learner
-    parser.add_argument('--alg_name', default='FSAC')
+    parser.add_argument('--alg_name', default=alg_name)
     parser.add_argument('--constrained', default=True)
     parser.add_argument('--gamma', type=float, default=0.99)
-    parser.add_argument('--cost_gamma', type=float, default=0.0)
+    parser.add_argument('--cost_gamma', type=float, default=0.99)
     parser.add_argument('--gradient_clip_norm', type=float, default=10.)
     parser.add_argument('--lam_gradient_clip_norm', type=float, default=3.)
     parser.add_argument('--num_batch_reuse', type=int, default=1)
@@ -216,7 +216,16 @@ def built_parser(alg_name):
         register_custom_env()
     env = gym.make(args.env_id) #  **vars(args)
     args.obs_dim, args.act_dim = int(env.observation_space.shape[0]), int(env.action_space.shape[0])
-    args.obs_scale = [1.] * args.obs_dim
+    # args.obs_scale = [1.] * args.obs_dim
+    if args.alg_name == 'SACL':
+        assert not args.mlp_lam
+        assert not args.adaptive_safety_index
+    if args.alg_name == 'FSAC':
+        assert args.mlp_lam
+        assert not args.adaptive_safety_index
+    if args.alg_name == 'FSAC-A':
+        assert args.mlp_lam
+        assert args.adaptive_safety_index
     return args
 
 def main(alg_name):
