@@ -64,7 +64,7 @@ def built_FSAC_parser():
     mode = parser.parse_args().mode
 
     if mode == 'testing':
-        test_dir = '../results/FSAC/Unicycle/Unicycle-2021-07-25-16-42-42'
+        test_dir = '../results/FSAC-A/Unicycle/Unicycle-2021-07-25-16-42-42'
         params = json.loads(open(test_dir + '/config.json').read())
         time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         test_log_dir = params['log_dir'] + '/tester/test-{}'.format(time_now)
@@ -109,9 +109,10 @@ def built_FSAC_parser():
     parser.add_argument('--cost_lim', type=float, default=0.0)
     parser.add_argument('--mlp_lam', default=True)
     parser.add_argument('--double_QC', type=bool, default=False)
-    parser.add_argument('--adaptive_safety_index', type=bool, default=True)
+    parser.add_argument('--adaptive_safety_index', type=bool, default=False)
     parser.add_argument('--adaptive_si_start', type=int, default=500000)
     parser.add_argument('--adaptive_si_interval', type=int, default=24)
+    parser.add_argument('--init_sis_paras', type=list, default=[0.7, 1.1, 0.3]) # # margin, k, power
 
     # worker
     parser.add_argument('--batch_size', type=int, default=128)
@@ -155,7 +156,7 @@ def built_FSAC_parser():
     if alpha == 'auto':
         parser.add_argument('--target_entropy', type=float, default=-2)
     parser.add_argument('--alpha_lr_schedule', type=list, default=[8e-5, 2000000, 8e-6])
-    parser.add_argument('--k_lr_schedule', type=list, default=[3e-6, 100000, 1e-6])
+    parser.add_argument('--k_lr_schedule', type=list, default=[8e-6, 100000, 1e-6])
     parser.add_argument('--policy_only', type=bool, default=False)
     parser.add_argument('--double_Q', type=bool, default=True)
     parser.add_argument('--target', type=bool, default=True)
@@ -184,7 +185,7 @@ def built_FSAC_parser():
     parser.add_argument('--num_buffers', type=int, default=NUM_BUFFER)
     parser.add_argument('--max_weight_sync_delay', type=int, default=300)
     parser.add_argument('--grads_queue_size', type=int, default=25)
-    parser.add_argument('--grads_max_reuse', type=int, default=0)
+    parser.add_argument('--grads_max_reuse', type=int, default=2)
     parser.add_argument('--eval_interval', type=int, default=10000) # 1000
     parser.add_argument('--save_interval', type=int, default=200000) # 200000
     parser.add_argument('--log_interval', type=int, default=100) # 100
@@ -193,7 +194,9 @@ def built_FSAC_parser():
     time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     env_id = parser.parse_args().env_id
     task = env_id.split('-')[1][:-1] if env_id.startswith('Safexp') else env_id.split('-')[0]
-    results_dir = '../results/FSAC/{task}/{experiment}-{time}'.format(task=task,
+    alg_name = parser.parse_args().alg_name
+    results_dir = '../results/{alg}/{task}/{experiment}-{time}'.format(task=task,
+                                                                       alg=alg_name,
                                                                       experiment=task,
                                                                       time=time_now)
     parser.add_argument('--result_dir', type=str, default=results_dir)

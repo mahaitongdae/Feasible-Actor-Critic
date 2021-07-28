@@ -597,9 +597,10 @@ class PolicyWithAdaSafetyIndex(PolicyWithMu):
                  policy_only, double_Q, target, tau, delay_update,
                  deterministic_policy, action_range, lam_lr_schedule, dual_ascent_interval=1, **kwargs)
 
+        self.init_sis_paras = kwargs.get('init_sis_paras')
         k_lr_schedule = kwargs.get('k_lr_schedule')
         k_lr = PolynomialDecay(*k_lr_schedule)
-        self.sis_para = SiSParaModel(name='k', init_var=[0.3, 1.0, 1.0]) # margin, k, power
+        self.sis_para = SiSParaModel(name='k', init_var=self.init_sis_paras)
         self.k_optimizer = self.tf.keras.optimizers.Adam(k_lr, name='k_opt')
         self.adaptive_safety_index = kwargs.get('adaptive_safety_index')
         self.models += (self.sis_para,)
@@ -634,13 +635,14 @@ class PolicyWithAdaSafetyIndex(PolicyWithMu):
             self.update_all_Q_target()
             alpha_grad = grads[-2:-1]
             self.alpha_optimizer.apply_gradients(zip(alpha_grad, self.alpha_model.trainable_weights))
-        if iteration % self.adaptive_si_interval == 0 and iteration > self.adaptive_si_start:
-            k_grad = grads[-1:]
-            self.k_optimizer.apply_gradients(zip(k_grad, self.sis_para.trainable_weights))
+        if self.adaptive_safety_index:
+            if iteration % self.adaptive_si_interval == 0 and iteration > self.adaptive_si_start:
+                k_grad = grads[-1:]
+                self.k_optimizer.apply_gradients(zip(k_grad, self.sis_para.trainable_weights))
 
     @property
     def get_sis_paras(self):
-        return tf.clip_by_value(self.sis_para.var, [0.0, 0.5, 0.1], [0.5, 3.0, 2.0])
+        return tf.clip_by_value(self.sis_para.var, [0.0, 0.5, 0.1], [1.0, 3.0, 2.0])
 
 
 
