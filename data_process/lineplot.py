@@ -13,7 +13,7 @@ from tensorboard.backend.event_processing import event_accumulator
 import json
 
 sns.set(style="darkgrid")
-SMOOTHFACTOR = 0.9
+SMOOTHFACTOR = 0.1
 SMOOTHFACTOR2 = 3
 DIV_LINE_WIDTH = 50
 txt_store_alg_list = ['CPO', 'PPO-Lagrangian']
@@ -58,9 +58,9 @@ def load_from_tf1_event(eval_dir, tag2plot):
     return data_in_one_run_of_one_alg
 
 def help_func():
-    tag2plot = ['episode_return']
-    alg_list = ['SACL', 'FSAC', 'FSAC-A'] # 'SAC',
-    lbs = ['SACL', 'FAC', 'FAC-A'] # 'SAC',
+    tag2plot = ['safety_index_power'] # , 'safety_index_margin', 'safety_index_power'
+    alg_list = [ 'FSAC-A'] # 'SACL', 'FSAC',
+    lbs = [ 'power', ] # 'SAC', 'SACL', 'FAC',  'margin', 'power'
     task = ['Unicycle']
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
@@ -82,7 +82,7 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
                     print(eval_dir)
                     df_in_one_run_of_one_alg = get_datasets(eval_dir, tag2plot, alg=alg, num_run=num_run)
                 else:
-                    eval_dir = data2plot_dir + '/' + dir + '/logs/evaluator'
+                    eval_dir = data2plot_dir + '/' + dir + '/logs/optimizer'
                     print(eval_dir)
                     eval_file = os.path.join(eval_dir,
                                              [file_name for file_name in os.listdir(eval_dir) if file_name.startswith('events')][0])
@@ -93,10 +93,11 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
                         event = event_pb2.Event.FromString(eval_summary.numpy())
                         step = event.step / 2 if alg == 'FSAC-A' else event.step
                         if step > 3e5: continue
+                        if int(step) % 1000 != 0: continue
                         for v in event.summary.value:
                             t = tf.make_ndarray(v.tensor)
                             for tag in tag2plot:
-                                if tag == v.tag[11:]:
+                                if tag == v.tag[31:]: # evaluator:11, optimizer:31
                                     data_in_one_run_of_one_alg[tag].append((1-SMOOTHFACTOR)*data_in_one_run_of_one_alg[tag][-1] + SMOOTHFACTOR*float(t)
                                                                            if data_in_one_run_of_one_alg[tag] else float(t))
                                     data_in_one_run_of_one_alg['iteration'].append(int(step))
@@ -112,9 +113,10 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
         fontsize = 16
         f1 = plt.figure(1, figsize=figsize)
         ax1 = f1.add_axes(axes_size)
-        sns.lineplot(x="iteration", y=tag, hue="algorithm",
-                     data=total_dataframe, linewidth=2, palette=palette
-                     )
+        for tag in tag2plot:
+            sns.lineplot(x="iteration", y=tag, hue="algorithm",
+                         data=total_dataframe, linewidth=2, palette=palette
+                         )
         # base = 0 # if task == 'CarPush' else 100
         # basescore = sns.lineplot(x=[0., 30.], y=[base, base], linewidth=2, color='black', linestyle='--')
         print(ax1.lines[0].get_data())
@@ -128,7 +130,11 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
         plt.yticks(fontsize=fontsize)
         plt.xticks(fontsize=fontsize)
         # plt.show()
-        fig_name = '../data_process/figure/' + task+'-'+tag + '.png'
+        if len(tag2plot) == 1:
+            fig_name = '../data_process/figure/' + task+'-'+ tag + '.png'
+        else:
+            name = 'sis_para'
+            fig_name = '../data_process/figure/' + task + '-' + name + '.png'
         plt.savefig(fig_name)
         # allresults = {}
         # results2print = {}
