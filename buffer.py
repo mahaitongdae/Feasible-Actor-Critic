@@ -171,7 +171,7 @@ class ReplayBufferWithCost(object):
             logger.info('Buffer info: {}'.format(self.get_stats()))
 
         self.replay_times += 1
-        self.count_heatmap()
+        # self.count_heatmap()
         return self.sample(self.replay_batch_size)
 
     def count_heatmap(self, state_range=None, num=None, iteration=0):

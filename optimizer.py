@@ -435,6 +435,10 @@ class OffPolicyAsyncOptimizerWithCost(object):
                     samples = ray.get(replay)
                     self.learner_queue.put((rb, samples))
 
+        # count heatmap
+        if self.optimizer_steps % 100000 == 0:
+            random.choice(self.replay_buffers).count_heatmap.remote(iteration=self.optimizer_steps)
+
         # learning
         with self.timers['learning_timer']:
             for learner, objID in self.learn_tasks.completed():
