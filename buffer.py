@@ -8,6 +8,7 @@
 # =====================================
 
 import logging
+import os
 import random
 
 import numpy as np
@@ -170,8 +171,43 @@ class ReplayBufferWithCost(object):
             logger.info('Buffer info: {}'.format(self.get_stats()))
 
         self.replay_times += 1
+        self.count_heatmap()
         return self.sample(self.replay_batch_size)
 
+    def count_heatmap(self, state_range=None, num=None, iteration=0):
+        if state_range is None:
+            state_range = [0.0, 4.0]
+        if num is None:
+            num = 8
+        import seaborn as sns
+        import pandas as pd
+        import matplotlib.pyplot as plt
+        data_to_count = np.stack(np.array(self._storage)[:, 0])
+        xy_data_to_count = data_to_count[:, :2]
+        blocks = np.linspace(state_range[0], state_range[1], int(num + 1))
+        df_list = []
+
+        for i in range(int(num)):
+            for j in range(int(num)):
+                x_low, x_high = blocks[i], blocks[i + 1]
+                y_low, y_high = blocks[j], blocks[j + 1]
+                low = np.array([x_low, y_low])
+                high = np.array([x_high, y_high])
+                t_or_f = (xy_data_to_count > low) & (xy_data_to_count < high)
+                count = np.logical_and(t_or_f[:,0], t_or_f[:,1]).sum()
+                df = pd.DataFrame(dict(x=[x_low], y=[y_low], count=[count]))
+                df_list.append(df)
+        total_df = pd.concat(df_list, ignore_index=True)
+        file_name = 'dist_{}.csv'.format(iteration)
+        save_path = os.path.join(self.args.log_dir, file_name)
+        total_df.to_csv(save_path)
+        total_df = total_df.pivot('x', 'y', 'count')
+        plt.figure()
+        sns.heatmap(total_df)
+        file_name = 'dist_{}.png'.format(iteration)
+        save_fig = os.path.join(self.args.log_dir, file_name)
+        plt.savefig(save_fig)
+        return None
 
 class PrioritizedReplayBuffer(ReplayBuffer):
     def __init__(self, args, buffer_id):
