@@ -172,6 +172,22 @@ class ReplayBufferWithCost(object):
         self.replay_times += 1
         return self.sample(self.replay_batch_size)
 
+    def draw_heatmap(self, range=[0.0, 4.0], num=8):
+        import seaborn as sns
+        import pandas as pd
+        data_to_count = np.stack(np.array(self._storage)[:, 0])
+        xy_data_to_count = data_to_count[:,:2]
+        blocks = np.linspace(range[0], range[1], int(num + 1))
+        df_list = []
+        for i in range(int(num)):
+            for j in range(int(num)):
+                x_low, x_high = blocks[i], blocks[i+1]
+                y_low, y_high = blocks[j], blocks[j+1]
+                count = ((x_low<xy_data_to_count[:,0]<x_high) & (y_low<xy_data_to_count[:,1]<y_high)).sum()
+                df = pd.DataFrame(dict(x=x_low, y=y_low, count=count))
+                df_list.append(df)
+        total_df = pd.concat(df_list, ignore_index=True)
+
 
 class PrioritizedReplayBuffer(ReplayBuffer):
     def __init__(self, args, buffer_id):
