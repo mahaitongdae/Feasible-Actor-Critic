@@ -301,10 +301,11 @@ class EvaluatorWithCost(object):
         if steps is not None:
             for _ in range(steps):
                 processed_obs = self.preprocessor.tf_process_obses(obs)
+                processed_obs, lam = self.policy_with_value.compute_lam(processed_obs[:self.args.obs_dim], processed_obs[self.args.obs_dim:], False)
                 action = self.policy_with_value.compute_mode(processed_obs)
                 if self.args.demo:
                     qc_val = self.policy_with_value.compute_QC1(processed_obs, action)
-                    lam = self.policy_with_value.compute_lam(processed_obs)
+                    
                     print("qc: {}".format(qc_val.numpy()))
                     print("lam: {}".format(lam.numpy()))
                     qc_list.append(qc_val[0])
@@ -324,10 +325,11 @@ class EvaluatorWithCost(object):
         else:
             while not done:
                 processed_obs = self.preprocessor.tf_process_obses(obs)
+                processed_obs, lam = self.policy_with_value.compute_lam(processed_obs[:self.args.obs_dim], processed_obs[self.args.obs_dim:], False)
                 action = self.policy_with_value.compute_mode(processed_obs)
                 if self.args.demo:
                     qc_val = self.policy_with_value.compute_QC1(processed_obs, action)
-                    lam = self.policy_with_value.compute_lam(processed_obs)
+                    
                     print("qc: {}".format(qc_val.numpy()))
                     print("lam: {}".format(lam.numpy()))
                     qc_list.append(qc_val[0])
@@ -381,8 +383,9 @@ class EvaluatorWithCost(object):
         obses = self.env.reset()
         if self.args.eval_render: self.env.render()
         for _ in range(self.args.fixed_steps):
-            processed_obses = self.preprocessor.tf_process_obses(obses)
-            actions = self.policy_with_value.compute_mode(processed_obses)
+            processed_obs = self.preprocessor.tf_process_obses(obses)
+            processed_obs, lam = self.policy_with_value.compute_lam(processed_obs[:self.args.obs_dim], processed_obs[self.args.obs_dim:], False)
+            actions = self.policy_with_value.compute_mode(processed_obs)
             obses_list.append(obses)
             actions_list.append(actions)
             obses, rewards, dones, _ = self.env.step(actions.numpy())
@@ -459,7 +462,7 @@ class EvaluatorWithCost(object):
                                x_mse, theta_mse, xdot_mse, thetadot_mse,
                                x_mse_25, theta_mse_25, xdot_mse_25, thetadot_mse_25])
 
-        elif self.args.env_id[:4] == 'Safe':
+        elif self.args.env_id[:4] == 'Safe' or self.args.env_id[:5] == 'Multi':
             episode_cost = episode_info['episode_cost']
             ep_cost_rate = episode_info['ep_cost_rate']
             key_list.extend(['episode_cost', 'ep_cost_rate'])

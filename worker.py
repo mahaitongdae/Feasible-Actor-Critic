@@ -217,6 +217,11 @@ class OffPolicyWorkerWithCost(object):
         self.sampled_costs = 0
         for _ in range(int(self.batch_size/self.num_agent)):
             processed_obs = self.preprocessor.process_obs(self.obs)
+            processed_obs, lam = self.policy_with_value.compute_lam(
+                                    processed_obs[:self.args.obs_dim], \
+                                    processed_obs[self.args.obs_dim:], \
+                                    False
+                                 )
             judge_is_nan([processed_obs])
             action, logp = self.policy_with_value.compute_action(self.tf.constant(processed_obs))
             if self.explore_sigma is not None:

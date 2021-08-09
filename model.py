@@ -10,8 +10,10 @@
 import tensorflow as tf
 from tensorflow import Variable
 from tensorflow.keras import Model, Sequential
-from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense, Dropout, MultiHeadAttention
 import numpy as np
+
+from model_utils import positional_encoding, EncoderLayer
 
 tf.config.experimental.set_visible_devices([], 'GPU')
 tf.config.threading.set_inter_op_parallelism_threads(1)
@@ -60,6 +62,75 @@ class LamModel(Model):
         super(LamModel, self).__init__(name=kwargs['name'])
         self.var = tf.Variable(-10., dtype=tf.float32)
 
+
+class AttnNet(Model):
+    def __init__(self, ego_dim, con_dim, max_seq_len,
+                 num_attn_layers, d_model, d_ff, num_heads, dropout, **kwargs):
+        super(AttnNet, self).__init__(name=kwargs['name'])
+
+        obs_dim = kwargs.get('obs_dim')
+        assert obs_dim == ego_dim + con_dim * (max_seq_len - 1) + max_seq_len
+        self.ego_dim = ego_dim
+        self.con_dim = con_dim
+        self.max_seq_len = max_seq_len
+
+        self.num_layers = num_attn_layers
+        self.d_model = d_model
+        self.d_ff = d_ff
+        self.num_heads = num_heads
+        self.dropout_rate = dropout
+
+        self.ego_embedding = Sequential([tf.keras.layers.InputLayer(input_shape=(self.ego_dim,)),
+                                         Dense(units=d_ff,
+                                               kernel_initializer=tf.keras.initializers.Orthogonal(np.sqrt(2.)),
+                                               activation='elu',
+                                               dtype=tf.float32),
+                                         Dense(d_model)])
+        self.cons_embedding = Sequential([tf.keras.layers.InputLayer(input_shape=(self.con_dim,)),
+                                         Dense(units=d_ff,
+                                               kernel_initializer=tf.keras.initializers.Orthogonal(np.sqrt(2.)),
+                                               activation='elu',
+                                               dtype=tf.float32),
+                                         Dense(d_model)])
+
+        self.pe = positional_encoding(max_seq_len, d_model)
+        self.dropout = Dropout(self.dropout_rate)
+
+        self.attn_layers = [EncoderLayer(d_model, num_heads, d_ff, dropout)
+                            for _ in range(self.num_layers-1)]
+        self.out_attn = MultiHeadAttention(1, d_model, dropout=dropout)
+        self.build(input_shape=[(None, 1, ego_dim), (None, max_seq_len-1, con_dim),
+                                (None, max_seq_len, max_seq_len), (None, max_seq_len, max_seq_len)])
+
+
+    def call(self, input, **kwargs):
+        '''
+        return
+        :x [B, T, d_model]
+        :weights [B, 1, T, T]
+        '''
+        training = kwargs.get('training')
+        x_ego, x_cons, padding_mask, mu_mask = input[0], input[1], input[2], input[3]
+        assert x_ego.shape[2] == self.ego_dim
+        assert x_cons.shape[2] == self.con_dim
+        assert x_cons.shape[1] == self.max_seq_len-1
+
+        x1 = self.ego_embedding(x_ego)
+        x2 = self.cons_embedding(x_cons)
+        x = tf.concat([x1, x2], axis=1)
+        assert x.shape[1] == self.max_seq_len
+        x += self.pe[:, :self.max_seq_len, :]
+
+        x = self.dropout(x, training=training)
+
+        for i in range(self.num_layers-1):
+            x = self.attn_layers[i](x, training, padding_mask)
+
+        output_mask = tf.minimum(padding_mask, mu_mask)
+        x, attn_weights = self.out_attn(x, x, attention_mask=output_mask,
+                                        return_attention_scores=True, training=training)
+
+        return x, attn_weights
 
 
 def test_alpha():

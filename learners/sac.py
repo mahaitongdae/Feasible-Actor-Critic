@@ -257,13 +257,22 @@ class SACLearnerWithCost(object):
         return self.info_for_buffer
 
     def get_batch_data(self, batch_data, rb, indexes):
-        self.batch_data = {'batch_obs': batch_data[0].astype(np.float32),
+        self.batch_data = {'batch_obs': batch_data[0, :self.args.obs_dim].astype(np.float32),
                            'batch_actions': batch_data[1].astype(np.float32),
                            'batch_rewards': batch_data[2].astype(np.float32),
-                           'batch_obs_tp1': batch_data[3].astype(np.float32),
+                           'batch_obs_tp1': batch_data[3, :self.args.obs_dim].astype(np.float32),
                            'batch_dones': batch_data[4].astype(np.float32),
-                           'batch_costs': batch_data[5].astype(np.float32)
+                           'batch_costs': batch_data[5].astype(np.float32),
+                           'batch_isAttended': batch_data[0, self.args.obs_dim:].astype(np.float32),
                            }
+        # (done) ADD HERE: get mb_re_obs from self.compute_lam(self.batch_data['batch_obs'])
+        # (done) ADD HERE: self.batch_data['batch_re_obs'] = mb_re_obs, & tp1
+        batch_obs = self.tf.convert_to_tensor(self.batch_data['batch_obs'], dtype=tf.float32)
+        batch_obs_tp1 = self.tf.convert_to_tensor(self.batch_data['batch_obs_tp1'], dtype=tf.float32)
+        batch_isAttended = self.tf.convert_to_tensor(self.batch_data['batch_isAttended'], dtype=tf.float32)
+        batch_re_obs, _ = self.policy_with_value.compute_lam(batch_obs, batch_isAttended)
+        batch_re_obs_tp1, _ = self.policy_with_value.compute_lam(batch_obs_tp1, batch_isAttended)
+        self.batch_data.update(dict(batch_re_obs=batch_re_obs, batch_re_obs_tp1=batch_re_obs_tp1))
 
         with self.target_timer:
             target, cost_target = self.compute_clipped_double_q_target()
@@ -277,8 +286,10 @@ class SACLearnerWithCost(object):
             self.stats.update(dict(qc_td_error=cost_td_error))
 
     def compute_clipped_double_q_target(self):
+        # (done) ADD HERE: ['batch_obs'] -> ['batch_re_obs']
+        # (done) ADD HERE: ['batch_obs_tp1'] -> ['batch_re_obs_tp1']
         processed_rewards = self.preprocessor.tf_process_rewards(self.batch_data['batch_rewards']).numpy()
-        processed_obs_tp1 = self.preprocessor.tf_process_obses(self.batch_data['batch_obs_tp1']).numpy()
+        processed_obs_tp1 = self.preprocessor.tf_process_obses(self.batch_data['batch_re_obs_tp1']).numpy()
 
         act_tp1, logp_tp1 = self.policy_with_value.compute_action(processed_obs_tp1)
 
@@ -300,10 +311,12 @@ class SACLearnerWithCost(object):
         return clipped_double_q_target, np.clip(clipped_qc_target, 0, np.inf)
 
     def compute_td_error(self):
-        processed_obs = self.preprocessor.tf_process_obses(self.batch_data['batch_obs']).numpy()  # n_step*obs_dim
+        # (done) ADD HERE: ['batch_obs'] -> ['batch_re_obs']
+        # (done) ADD HERE: ['batch_obs_tp1'] -> ['batch_re_obs_tp1']
+        processed_obs = self.preprocessor.tf_process_obses(self.batch_data['batch_re_obs']).numpy()  # n_step*obs_dim
         processed_rewards = self.preprocessor.tf_process_rewards(self.batch_data['batch_rewards']).numpy()
         processed_cost = self.batch_data['batch_costs']
-        processed_obs_tp1 = self.preprocessor.tf_process_obses(self.batch_data['batch_obs_tp1']).numpy()
+        processed_obs_tp1 = self.preprocessor.tf_process_obses(self.batch_data['batch_re_obs_tp1']).numpy()
 
         values_t = self.policy_with_value.compute_Q1(processed_obs, self.batch_data['batch_actions']).numpy()
         target_act_tp1, _ = self.policy_with_value.compute_target_action(processed_obs_tp1)
@@ -359,13 +372,15 @@ class SACLearnerWithCost(object):
             all_Qs_min = self.tf.reduce_min((all_Qs1, all_Qs2), 0)
             alpha = self.tf.exp(self.policy_with_value.log_alpha) if self.args.alpha == 'auto' else self.args.alpha
             QC = self.policy_with_value.compute_QC1(processed_obses, actions)
-            if self.args.mlp_lam:
-                lams = self.policy_with_value.compute_lam(processed_obses)
+            if self.args.attention_lam:
+                batch_obs = self.tf.convert_to_tensor(self.batch_data['batch_obs'], dtype=tf.float32)
+                batch_isAttended = self.tf.convert_to_tensor(self.batch_data['batch_isAttended'], dtype=tf.float32)
+                _, lams = self.policy_with_value.compute_lam(batch_obs, batch_isAttended)
                 penalty_terms = self.tf.reduce_mean(self.tf.multiply(self.tf.stop_gradient(lams), QC))
-            else:
+            elif not self.args.mlp_lam:
                 lams = self.policy_with_value.log_lam
                 penalty_terms = lams * self.tf.reduce_mean(QC)
-            policy_loss = self.tf.reduce_mean(alpha*logps-all_Qs_min)
+            policy_loss = self.tf.reduce_mean(alpha * logps - all_Qs_min)
             if self.args.constrained: # todo: add to hyper
                 lagrangian = policy_loss + penalty_terms # todo: + or -
             else:
@@ -375,7 +390,7 @@ class SACLearnerWithCost(object):
             value_mean = self.tf.reduce_mean(all_Qs_min)
             cost_value_var = self.tf.math.reduce_variance(QC)
             cost_value_mean = self.tf.math.reduce_mean(QC)
-            statistic_dict = dict(policy_entropy=policy_entropy,value_var=value_var, value_mean=value_mean,
+            statistic_dict = dict(policy_entropy=policy_entropy, value_var=value_var, value_mean=value_mean,
                                cost_value_var=cost_value_var, cost_value_mean=cost_value_mean,
                                )
 
@@ -393,12 +408,13 @@ class SACLearnerWithCost(object):
             all_Qs2 = self.policy_with_value.compute_Q2(processed_obses, actions)
             all_Qs_min = self.tf.reduce_min((all_Qs1, all_Qs2), 0)
             alpha = self.tf.exp(self.policy_with_value.log_alpha) if self.args.alpha == 'auto' else self.args.alpha
-            # lams = self.policy_with_value.compute_lam(processed_obses)
             QC = self.policy_with_value.compute_QC1(processed_obses, actions)
-            if self.args.mlp_lam:
-                lams = self.policy_with_value.compute_lam(processed_obses)
+            if self.args.attention_lam:
+                batch_obs = self.tf.convert_to_tensor(self.batch_data['batch_obs'], dtype=tf.float32)
+                batch_isAttended = self.tf.convert_to_tensor(self.batch_data['batch_isAttended'], dtype=tf.float32)
+                _, lams = self.policy_with_value.compute_lam(batch_obs, batch_isAttended)
                 penalty_terms = self.tf.reduce_mean(self.tf.multiply(self.tf.stop_gradient(lams), QC))
-            else:
+            elif not self.args.mlp_lam:
                 lams = self.policy_with_value.log_lam
                 penalty_terms = lams * self.tf.reduce_mean(QC)
             policy_loss = self.tf.reduce_mean(alpha * logps - all_Qs_min)
@@ -413,9 +429,10 @@ class SACLearnerWithCost(object):
                                   )
 
         with self.tf.name_scope('policy_gradient') as scope:
-            policy_gradient = tape.gradient(lagrangian, self.policy_with_value.policy.trainable_weights, )
+            policy_gradient = tape.gradient(lagrangian, self.policy_with_value.policy.trainable_weights,)
             return policy_loss, penalty_terms, lagrangian, policy_gradient, statistic_dict
 
+    # ADD: mb_obs, mb_re_obs
     @tf.function
     def lam_forward_and_backward(self, mb_obs, mb_actions):
         assert self.args.constrained
@@ -425,14 +442,17 @@ class SACLearnerWithCost(object):
             violation = QC1 - self.args.cost_lim
             violation_count = self.tf.where(QC1 > self.args.cost_lim, self.tf.ones_like(QC1), self.tf.zeros_like(QC1))
             violation_rate = self.tf.reduce_sum(violation_count) / self.args.replay_batch_size
-            if self.args.mlp_lam:
-                lams = self.policy_with_value.compute_lam(processed_obses)
+            if self.args.attention_lam:
+                batch_obs = self.tf.convert_to_tensor(self.batch_data['batch_obs'], dtype=tf.float32)
+                batch_isAttended = self.tf.convert_to_tensor(self.batch_data['batch_isAttended'], dtype=tf.float32)
+                _, lams = self.policy_with_value.compute_lam(batch_obs, batch_isAttended)
+                assert lams.shape == violation.shape
                 complementary_slackness = self.tf.reduce_mean(
                     self.tf.multiply(lams, self.tf.stop_gradient(violation)))
-
-            else:
+            elif not self.args.mlp_lam:
                 lams = self.policy_with_value.log_lam
                 complementary_slackness = lams * self.tf.reduce_mean(self.tf.stop_gradient(violation))
+
             lam_loss = - complementary_slackness
 
         lam_stats = dict(lam=lams, violation_rate=violation_rate)
@@ -454,7 +474,7 @@ class SACLearnerWithCost(object):
             return alpha_loss, self.tf.exp(log_alpha), alpha_gradient
 
     def export_graph(self, writer):
-        mb_obs = self.batch_data['batch_obs']
+        mb_obs = self.batch_data['batch_re_obs']
         mb_targets = self.batch_data['batch_targets']
         mb_actions = self.batch_data['batch_actions']
         self.tf.summary.trace_on(graph=True, profiler=False)
@@ -478,7 +498,7 @@ class SACLearnerWithCost(object):
         self.counter += 1
         if self.args.buffer_type != 'normal':
             self.info_for_buffer.update(dict(td_error=self.compute_td_error()))
-        mb_obs = self.batch_data['batch_obs']
+        mb_obs = self.batch_data['batch_re_obs']
         mb_actions = self.batch_data['batch_actions']
         mb_targets = self.batch_data['batch_targets']
         mb_cost_targets = self.batch_data['batch_cost_targets']

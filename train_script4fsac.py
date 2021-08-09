@@ -19,14 +19,14 @@ import ray
 
 from buffer import *
 from evaluator import Evaluator, EvaluatorWithCost
-from learners.ampc import AMPCLearner
-from learners.mpg_learner import MPGLearner
-from learners.nadp import NADPLearner
-from learners.ndpg import NDPGLearner
+# from learners.ampc import AMPCLearner
+# from learners.mpg_learner import MPGLearner
+# from learners.nadp import NADPLearner
+# from learners.ndpg import NDPGLearner
 from learners.sac import SACLearner, SACLearnerWithCost
-from learners.td3 import TD3Learner
+# from learners.td3 import TD3Learner
 from optimizer import OffPolicyAsyncOptimizer, SingleProcessOffPolicyOptimizer, OffPolicyAsyncOptimizerWithCost
-from policy import PolicyWithMu
+from policy import PolicyWithMu, AttentionPolicyWithMu
 from tester import Tester
 from trainer import Trainer
 from worker import OffPolicyWorker, OffPolicyWorkerWithCost
@@ -48,18 +48,18 @@ NAME2BUFFERCLS = dict([('normal', ReplayBuffer),
 NAME2OPTIMIZERCLS = dict([('OffPolicyAsync', OffPolicyAsyncOptimizer),
                           ('OffPolicyAsyncWithCost', OffPolicyAsyncOptimizerWithCost),
                           ('SingleProcessOffPolicy', SingleProcessOffPolicyOptimizer)])
-NAME2POLICYCLS = dict([('PolicyWithMu',PolicyWithMu)])
+NAME2POLICYCLS = dict([('PolicyWithMu',PolicyWithMu), 'AttentionPolicyWithMu', AttentionPolicyWithMu])
 NAME2EVALUATORCLS = dict([('Evaluator', Evaluator), ('EvaluatorWithCost', EvaluatorWithCost), ('None', None)])
-NUM_WORKER = 4
-NUM_LEARNER = 4
-NUM_BUFFER = 4
+NUM_WORKER = 12
+NUM_LEARNER = 12
+NUM_BUFFER = 12
 
 def built_FAC_parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--mode', type=str, default='training') # training testing
     parser.add_argument('--seed', type=int, default=2)
-    parser.add_argument('--env_id', default='Safexp-PointButton1-v0')
+    parser.add_argument('--env_id', default='Multi-PointGoal2-v0')
     parser.add_argument('test_dir', default=None)
     parser.add_argument('test_iter_list', default=None)
     mode = parser.parse_args().mode
@@ -84,12 +84,13 @@ def built_FAC_parser():
         return parser.parse_args()
 
     # trainer
-    parser.add_argument('--policy_type', type=str, default='PolicyWithMu')
+    parser.add_argument('--policy_type', type=str, default='AttentionPolicyWithMu')
     parser.add_argument('--worker_type', type=str, default='OffPolicyWorkerWithCost')
     parser.add_argument('--evaluator_type', type=str, default='EvaluatorWithCost')
     parser.add_argument('--buffer_type', type=str, default='cost')
     parser.add_argument('--optimizer_type', type=str, default='OffPolicyAsyncWithCost')
     parser.add_argument('--off_policy', type=str, default=True)
+    parser.add_argument('--penalty_start', type=int, default=1500000)
     parser.add_argument('--demo', type=bool, default=False)
 
     # env
@@ -145,6 +146,7 @@ def built_FAC_parser():
     parser.add_argument('--log_interval', type=int, default=100)
 
     # policy and model
+        # MLP model
     max_iter = parser.parse_args().max_iter
     delayed_update = parser.parse_args().delayed_update
     dual_ascent_interval = parser.parse_args().dual_ascent_interval
@@ -165,6 +167,17 @@ def built_FAC_parser():
     parser.add_argument('--lam_lr_schedule', type=list, default=[5e-5, int(max_iter/dual_ascent_interval), 3e-6])
     parser.add_argument('--alpha', default='auto')  # 'auto' 0.02
     alpha = parser.parse_args().alpha
+        # Attention model
+    parser.add_argument('--num_attn_layers', type=int, default=3)
+    parser.add_argument('--d_model', type=int, default=128)
+    parser.add_argument('--d_ff', type=int, default=128)
+    parser.add_argument('--num_heads', type=int, default=4)
+    parser.add_argument('--drop_rate', type=float, default=0.1)
+    parser.add_argument('--backbone_cls', type=str, default='Attn')
+    parser.add_argument('--attention_lam', default=True)
+    # parser.add_argument('--mu_lr_schedule', type=list, default=[3e-5, 150000, 1e-6])
+    # parser.add_argument('--mu_update_interval', type=int, default=4)
+
     if alpha == 'auto':
         parser.add_argument('--target_entropy', type=float, default=-2) # todo
     parser.add_argument('--alpha_lr_schedule', type=list, default=[8e-5, int(max_iter/delayed_update), 3e-6])
@@ -180,11 +193,18 @@ def built_FAC_parser():
     parser.add_argument('--cost_bias', type=float, default=0.0)
 
     # preprocessor
-    parser.add_argument('--obs_ptype', type=str, default='scale')
+    parser.add_argument('--obs_ptype', type=str, default=None)
     parser.add_argument('--obs_scale', type=list, default=None)
     parser.add_argument('--rew_ptype', type=str, default='scale')
     parser.add_argument('--rew_scale', type=float, default=1.) # todo
     parser.add_argument('--rew_shift', type=float, default=0.)
+
+    # ENV dims
+    parser.add_argument('--ego_dim', type=int, default=12)
+    parser.add_argument('--con_dim', type=int, default=16)
+    parser.add_argument('--max_seq_len', type=int, default=7)
+    parser.add_argument('--con_num', type=int, default=5)
+
 
     # IO
     time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -210,7 +230,10 @@ def built_parser(alg_name):
 
     env = gym.make(args.env_id) #  **vars(args)
     args.obs_dim, args.act_dim = int(env.observation_space.shape[0]), int(env.action_space.shape[0])
+    args.obs_dim -= args.max_seq_len
     args.obs_scale = [1.] * args.obs_dim
+
+    args.training = True if args.mode == 'training' else False
     return args
 
 def main(alg_name):
