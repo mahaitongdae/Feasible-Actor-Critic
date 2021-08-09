@@ -178,7 +178,7 @@ class ReplayBufferWithCost(object):
         if state_range is None:
             state_range = [0.0, 4.0]
         if num is None:
-            num = 8
+            num = 16
         import seaborn as sns
         import pandas as pd
         import matplotlib.pyplot as plt

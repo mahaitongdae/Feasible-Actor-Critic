@@ -436,7 +436,7 @@ class OffPolicyAsyncOptimizerWithCost(object):
                     self.learner_queue.put((rb, samples))
 
         # count heatmap
-        if self.optimizer_steps % 10000 == 0:
+        if self.optimizer_steps % 6000 == 0:
             random.choice(self.replay_buffers).count_heatmap.remote(iteration=self.optimizer_steps)
 
         # learning
