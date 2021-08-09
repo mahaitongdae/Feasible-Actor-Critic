@@ -218,8 +218,8 @@ class OffPolicyWorkerWithCost(object):
         for _ in range(int(self.batch_size/self.num_agent)):
             processed_obs = self.preprocessor.process_obs(self.obs)
             processed_obs, lam = self.policy_with_value.compute_lam(
-                                    processed_obs[:self.args.obs_dim], \
-                                    processed_obs[self.args.obs_dim:], \
+                                    processed_obs[:, :self.args.obs_dim], \
+                                    processed_obs[:, self.args.obs_dim:], \
                                     False
                                  )
             judge_is_nan([processed_obs])
