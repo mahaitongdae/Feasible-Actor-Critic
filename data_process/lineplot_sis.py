@@ -18,45 +18,6 @@ SMOOTHFACTOR2 = 3
 DIV_LINE_WIDTH = 50
 txt_store_alg_list = ['CPO', 'PPO-Lagrangian']
 
-def load_from_event():
-    tag2plot = ['episode_return']
-    eval_summarys = tf.data.TFRecordDataset(['/home/mahaitong/PycharmProjects/mpg/results/FSAC/CarButton1-2021-04-20-14-40-50/logs/evaluator/events.out.tfevents.1618900860.mahaitong-virtual-machine.33389.1126.v2'])
-    data_in_one_run_of_one_alg = {key: [] for key in tag2plot}
-    data_in_one_run_of_one_alg.update({'iteration': []})
-    for eval_summary in eval_summarys:
-        event = event_pb2.Event.FromString(eval_summary.numpy())
-        for v in event.summary.value:
-            t = tf.make_ndarray(v.tensor)
-            for tag in tag2plot:
-                if tag == v.tag[11:]:
-                    data_in_one_run_of_one_alg[tag].append(
-                        (1 - SMOOTHFACTOR) * data_in_one_run_of_one_alg[tag][-1] + SMOOTHFACTOR * float(t)
-                        if data_in_one_run_of_one_alg[tag] else float(t))
-                    data_in_one_run_of_one_alg['iteration'].append(int(event.step))
-    a = 1
-
-def load_from_tf1_event(eval_dir, tag2plot):
-    from tensorboard.backend.event_processing import event_accumulator
-
-    tag2plot = []
-    ea = event_accumulator.EventAccumulator('/home/mahaitong/PycharmProjects/mpg/results/FSAC/tf1_test/fsac')
-    ea.Reload()
-    tag2plot += ea.scalars.Keys()
-    data_in_one_run_of_one_alg = {key: [] for key in tag2plot}
-    data_in_one_run_of_one_alg.update({'iteration': []})
-    valid_tag_list = [i for i in tag2plot if i in ea.scalars.Keys()]
-    for tag in valid_tag_list:
-        events = ea.scalars.Items(tag)
-        for idx, event in enumerate(events):
-            t = event.value
-            data_in_one_run_of_one_alg[tag].append(
-                (1 - SMOOTHFACTOR) * data_in_one_run_of_one_alg[tag][-1] + SMOOTHFACTOR * float(t)
-                if data_in_one_run_of_one_alg[tag] else float(t))
-            if tag == valid_tag_list[0]:
-                data_in_one_run_of_one_alg['iteration'].append(int(event.step))
-
-    return data_in_one_run_of_one_alg
-
 def help_func():
     tag2plot = ['episode_return']
     alg_list = ['FSAC'] # 'SAC',
