@@ -90,7 +90,7 @@ def built_FSAC_parser(alg_name):
     parser.add_argument('--buffer_type', type=str, default='cost')
     parser.add_argument('--optimizer_type', type=str, default='OffPolicyAsyncWithCost')
     parser.add_argument('--off_policy', type=str, default=True)
-    parser.add_argument('--random_seed', type=int, default=2)
+    parser.add_argument('--random_seed', type=int, default=6)
     parser.add_argument('--penalty_start', type=int, default=0)
     parser.add_argument('--demo', type=bool, default=False)
 
