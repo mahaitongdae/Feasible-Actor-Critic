@@ -183,7 +183,9 @@ class ReplayBufferWithCost(object):
         import pandas as pd
         import matplotlib.pyplot as plt
         data_to_count = np.stack(np.array(self._storage)[:, 0])
-        xy_data_to_count = data_to_count[:, :2]
+        x_data_to_count = np.abs(data_to_count[:, 0])
+        y_data_to_count = np.abs(data_to_count[:, 1] - data_to_count[:, -1])
+        dist = np.stack([x_data_to_count, y_data_to_count]).T
         blocks = np.linspace(state_range[0], state_range[1], int(num + 1))
         df_list = []
 
@@ -193,7 +195,7 @@ class ReplayBufferWithCost(object):
                 y_low, y_high = blocks[j], blocks[j + 1]
                 low = np.array([x_low, y_low])
                 high = np.array([x_high, y_high])
-                t_or_f = (xy_data_to_count > low) & (xy_data_to_count < high)
+                t_or_f = (dist > low) & (dist < high)
                 count = np.logical_and(t_or_f[:,0], t_or_f[:,1]).sum()
                 df = pd.DataFrame(dict(x=[x_low], y=[y_low], count=[count]))
                 df_list.append(df)

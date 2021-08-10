@@ -24,8 +24,8 @@ class UnicycleEnv(gym.Env):
         self.rew_coef = np.array([1., 1., 1., 0.1])
         self.phi = None
         self.sis_info = dict()
-        self.observation_space = gym.spaces.Box(low=np.array([-10.0, -10.0, -2.0, -np.pi]),
-                                                high=np.array([10.0, 10.0, 2.0, np.pi]))
+        self.observation_space = gym.spaces.Box(low=np.array([-10.0, -10.0, -2.0, -np.pi, -5.0]),
+                                                high=np.array([10.0, 10.0, 2.0, np.pi, 5.0]))
         self.action_space = gym.spaces.Box(low=np.array([-4.0, -np.pi])
                                            , high=np.array([4.0, np.pi]))
         self.sis_paras = None
@@ -76,6 +76,7 @@ class UnicycleEnv(gym.Env):
         # state, reward, done, info
         info = {}
         info.update(dict(cost=self.compute_cost()))
+        info.update(dict(obs_y=self.obstacle_center_y))
         old_phi = self.phi
         self.phi = self.adaptive_safety_index()  # the self.phi only works with evaluator with fixed sis_paras
         if old_phi <= 0:
@@ -86,12 +87,13 @@ class UnicycleEnv(gym.Env):
         # update info dict
         info.update({'delta_phi': delta_phi})
         info.update(self.sis_info)
-        return np.squeeze(np.array(self.state)), rew, done, info
+        obs = np.append(np.squeeze(np.array(self.state)), self.obstacle_center_y)
+        return obs, rew, done, info
 
     def reset(self):
         self.state = np.array([0., -1.5, 1. + random.random(),
                                random.random() * np.pi / 2 + np.pi / 4])  # random.random() * np.pi / 2 + np.pi / 4
-        self.obstacle_center_y = random.random() - 0.5
+        self.obstacle_center_y = 3 * random.random() - 0.5
         self.phi = self.adaptive_safety_index()
         self.ref = np.zeros_like(self.state)
         self.step_cnt = 0

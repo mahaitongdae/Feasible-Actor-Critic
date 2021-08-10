@@ -19,7 +19,7 @@ DIV_LINE_WIDTH = 50
 txt_store_alg_list = ['CPO', 'PPO-Lagrangian']
 
 def help_func():
-    tag2plot = ['episode_cost'] # , 'safety_index_margin', 'safety_index_power'
+    tag2plot = ['episode_return'] # , 'safety_index_margin', 'safety_index_power'
     alg_list = [ 'FSAC-A', 'SACL', 'FSAC',] # 'SACL', 'FSAC',
     lbs = [  'FAC-A', 'SACL', 'FAC', ] # 'SAC', 'SACL', 'FAC',  'margin', 'power'
     task = ['Unicycle']

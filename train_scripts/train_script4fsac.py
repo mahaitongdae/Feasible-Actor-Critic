@@ -65,12 +65,12 @@ def built_FSAC_parser(alg_name):
     mode = parser.parse_args().mode
 
     if mode == 'testing':
-        test_dir = '../results/FSAC-A/Unicycle/Unicycle-2021-07-25-16-42-42'
+        test_dir = '../results/FSAC-A/Unicycle/data2plot2/Unicycle-2021-08-09-23-22-26'
         params = json.loads(open(test_dir + '/config.json').read())
         time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         test_log_dir = params['log_dir'] + '/tester/test-{}'.format(time_now)
         params.update(dict(test_dir=test_dir,
-                           test_iter_list=[1400000],
+                           test_iter_list=[200000],
                            test_log_dir=test_log_dir,
                            num_eval_episode=100,
                            num_eval_agent=1,
@@ -81,7 +81,7 @@ def built_FSAC_parser(alg_name):
             parser.add_argument("-" + key, default=val)
         return parser.parse_args()
 
-    parser.add_argument('--motivation', type=str, default='add clip')  # training testing
+    parser.add_argument('--motivation', type=str, default='change obstacle range 3')  # training testing
 
     # trainer
     parser.add_argument('--policy_type', type=str, default='PolicyWithAdaSafetyIndex')
@@ -90,7 +90,7 @@ def built_FSAC_parser(alg_name):
     parser.add_argument('--buffer_type', type=str, default='cost')
     parser.add_argument('--optimizer_type', type=str, default='OffPolicyAsyncWithCost')
     parser.add_argument('--off_policy', type=str, default=True)
-    parser.add_argument('--random_seed', type=int, default=6)
+    parser.add_argument('--random_seed', type=int, default=2)
     parser.add_argument('--penalty_start', type=int, default=0)
     parser.add_argument('--demo', type=bool, default=False)
 
@@ -110,10 +110,10 @@ def built_FSAC_parser(alg_name):
     parser.add_argument('--cost_lim', type=float, default=0.0)
     parser.add_argument('--mlp_lam', default=True)
     parser.add_argument('--double_QC', type=bool, default=False)
-    parser.add_argument('--adaptive_safety_index', type=bool, default=False)
+    parser.add_argument('--adaptive_safety_index', type=bool, default=True)
     parser.add_argument('--adaptive_si_start', type=int, default=100000)
-    parser.add_argument('--adaptive_si_interval', type=int, default=24)
-    parser.add_argument('--init_sis_paras', type=list, default=[0.1, 1.0, 2.0]) # # margin, k, power
+    parser.add_argument('--adaptive_si_interval', type=int, default=50)
+    parser.add_argument('--init_sis_paras', type=list, default=[0.3, 1.0, 2.0]) # # margin, k, power
 
     # worker
     parser.add_argument('--batch_size', type=int, default=128)
@@ -157,7 +157,7 @@ def built_FSAC_parser(alg_name):
     if alpha == 'auto':
         parser.add_argument('--target_entropy', type=float, default=-2)
     parser.add_argument('--alpha_lr_schedule', type=list, default=[8e-5, 2000000, 8e-6])
-    parser.add_argument('--k_lr_schedule', type=list, default=[8e-6, 100000, 1e-6])
+    parser.add_argument('--k_lr_schedule', type=list, default=[2e-5, 100000, 1e-6])
     parser.add_argument('--policy_only', type=bool, default=False)
     parser.add_argument('--double_Q', type=bool, default=True)
     parser.add_argument('--target', type=bool, default=True)
@@ -173,7 +173,7 @@ def built_FSAC_parser(alg_name):
     # preprocessor
     parser.add_argument('--obs_ptype', type=str, default='scale')
     num_future_data = parser.parse_args().num_future_data
-    parser.add_argument('--obs_scale', type=list, default=[1.0, 1.0, 1.0, 1 / 3.14])
+    parser.add_argument('--obs_scale', type=list, default=[1.0, 1.0, 1.0, 1 / 3.14, 1 / 3.0])
     parser.add_argument('--rew_ptype', type=str, default='scale')
     parser.add_argument('--rew_scale', type=float, default=1.)
     parser.add_argument('--rew_shift', type=float, default=0.)
@@ -262,4 +262,4 @@ def main(alg_name):
 
 
 if __name__ == '__main__':
-    main('FSAC')
+    main('FSAC-A')
