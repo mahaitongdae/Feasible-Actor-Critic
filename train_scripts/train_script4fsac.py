@@ -81,7 +81,7 @@ def built_FSAC_parser(alg_name):
             parser.add_argument("-" + key, default=val)
         return parser.parse_args()
 
-    parser.add_argument('--motivation', type=str, default='change obstacle range 3')  # training testing
+    parser.add_argument('--motivation', type=str, default='reduce buffer size')  # training testing
 
     # trainer
     parser.add_argument('--policy_type', type=str, default='PolicyWithAdaSafetyIndex')
@@ -121,7 +121,7 @@ def built_FSAC_parser(alg_name):
     parser.add_argument('--explore_sigma', type=float, default=None)
 
     # buffer
-    parser.add_argument('--max_buffer_size', type=int, default=500000)
+    parser.add_argument('--max_buffer_size', type=int, default=50000)
     parser.add_argument('--replay_starts', type=int, default=3000)
     parser.add_argument('--replay_batch_size', type=int, default=256)
     parser.add_argument('--replay_alpha', type=float, default=0.6)
