@@ -41,6 +41,13 @@ def positional_encoding(position, d_model):
     return tf.cast(pos_encoding, dtype=tf.float32)
 
 
+def pointwise_feedforward(d_model, d_ff):
+    return Sequential([
+        Dense(d_ff, activation='elu'),
+        Dense(d_model)
+    ])
+
+
 class EncoderLayer(tf.keras.layers.Layer):
     def __init__(self, d_model, num_heads, d_ff, dropout=0.1):
         super(EncoderLayer, self).__init__()

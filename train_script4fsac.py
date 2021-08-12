@@ -39,7 +39,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['OMP_NUM_THREADS'] = '1'
 NAME2WORKERCLS = dict([('OffPolicyWorker', OffPolicyWorker),
                        ('OffPolicyWorkerWithCost', OffPolicyWorkerWithCost)])
-NAME2LEARNERCLS = dict([('FSAC', SACLearnerWithCost)])
+NAME2LEARNERCLS = dict([('FAC', SACLearnerWithCost)])
 NAME2BUFFERCLS = dict([('normal', ReplayBuffer),
                        ('priority', PrioritizedReplayBuffer),
                        ('None', None),
@@ -48,20 +48,20 @@ NAME2BUFFERCLS = dict([('normal', ReplayBuffer),
 NAME2OPTIMIZERCLS = dict([('OffPolicyAsync', OffPolicyAsyncOptimizer),
                           ('OffPolicyAsyncWithCost', OffPolicyAsyncOptimizerWithCost),
                           ('SingleProcessOffPolicy', SingleProcessOffPolicyOptimizer)])
-NAME2POLICYCLS = dict([('PolicyWithMu',PolicyWithMu), 'AttentionPolicyWithMu', AttentionPolicyWithMu])
+NAME2POLICYCLS = dict([('PolicyWithMu',PolicyWithMu), ('AttentionPolicyWithMu', AttentionPolicyWithMu)])
 NAME2EVALUATORCLS = dict([('Evaluator', Evaluator), ('EvaluatorWithCost', EvaluatorWithCost), ('None', None)])
-NUM_WORKER = 12
+NUM_WORKER = 4
 NUM_LEARNER = 12
-NUM_BUFFER = 12
+NUM_BUFFER = 4
 
 def built_FAC_parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--mode', type=str, default='training') # training testing
-    parser.add_argument('--seed', type=int, default=2)
+    parser.add_argument('--random_seed', type=int, default=2)
     parser.add_argument('--env_id', default='Multi-PointGoal2-v0')
-    parser.add_argument('test_dir', default=None)
-    parser.add_argument('test_iter_list', default=None)
+#   parser.add_argument('test_dir', default=None)
+#    parser.add_argument('test_iter_list', default=None)
     mode = parser.parse_args().mode
 
     if mode == 'testing':
@@ -148,7 +148,7 @@ def built_FAC_parser():
     # policy and model
         # MLP model
     max_iter = parser.parse_args().max_iter
-    delayed_update = parser.parse_args().delayed_update
+    delayed_update = parser.parse_args().delay_update
     dual_ascent_interval = parser.parse_args().dual_ascent_interval
     parser.add_argument('--obs_dim', type=int, default=None)
     parser.add_argument('--act_dim', type=int, default=None)
@@ -231,6 +231,7 @@ def built_parser(alg_name):
     env = gym.make(args.env_id) #  **vars(args)
     args.obs_dim, args.act_dim = int(env.observation_space.shape[0]), int(env.action_space.shape[0])
     args.obs_dim -= args.max_seq_len
+    print(args.obs_dim)
     args.obs_scale = [1.] * args.obs_dim
 
     args.training = True if args.mode == 'training' else False

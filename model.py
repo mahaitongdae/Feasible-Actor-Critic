@@ -68,8 +68,8 @@ class AttnNet(Model):
                  num_attn_layers, d_model, d_ff, num_heads, dropout, **kwargs):
         super(AttnNet, self).__init__(name=kwargs['name'])
 
-        obs_dim = kwargs.get('obs_dim')
-        assert obs_dim == ego_dim + con_dim * (max_seq_len - 1) + max_seq_len
+#        obs_dim = kwargs.get('obs_dim')
+#        assert obs_dim == ego_dim + con_dim * (max_seq_len - 1), print(obs_dim, ego_dim, con_dim, max_seq_len)
         self.ego_dim = ego_dim
         self.con_dim = con_dim
         self.max_seq_len = max_seq_len
@@ -80,18 +80,16 @@ class AttnNet(Model):
         self.num_heads = num_heads
         self.dropout_rate = dropout
 
-        self.ego_embedding = Sequential([tf.keras.layers.InputLayer(input_shape=(self.ego_dim,)),
-                                         Dense(units=d_ff,
+        self.ego_embedding = Sequential([Dense(units=d_ff,
                                                kernel_initializer=tf.keras.initializers.Orthogonal(np.sqrt(2.)),
                                                activation='elu',
                                                dtype=tf.float32),
                                          Dense(d_model)])
-        self.cons_embedding = Sequential([tf.keras.layers.InputLayer(input_shape=(self.con_dim,)),
-                                         Dense(units=d_ff,
+        self.cons_embedding = Sequential([Dense(units=d_ff,
                                                kernel_initializer=tf.keras.initializers.Orthogonal(np.sqrt(2.)),
                                                activation='elu',
                                                dtype=tf.float32),
-                                         Dense(d_model)])
+                                          Dense(d_model)])
 
         self.pe = positional_encoding(max_seq_len, d_model)
         self.dropout = Dropout(self.dropout_rate)

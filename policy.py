@@ -735,7 +735,7 @@ class AttentionPolicyWithMu(tf.Module):
                                              create_attention_mask(batch_size, self.max_seq_len, isAttended),
                                              create_mu_mask(batch_size, self.max_seq_len),],
                                             training=training)
-            lam_attn = self.tf.reduce_max(self.tf.squeeze(attn_weights[:, :, 0, 2:]), axis=1, keepdim=True)
+            lam_attn = self.tf.reduce_max(self.tf.squeeze(attn_weights[:, :, 0, 2:], axis=1), axis=1)
             return re_obs[:, 0, :], tf.cast(tf.exp(5*lam_attn)-1, dtype=tf.float32)
             
 
