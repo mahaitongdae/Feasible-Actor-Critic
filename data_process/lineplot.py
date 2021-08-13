@@ -19,13 +19,13 @@ DIV_LINE_WIDTH = 50
 txt_store_alg_list = ['CPO', 'PPO-Lagrangian']
 
 def help_func():
-    tag2plot = ['episode_return'] # , 'safety_index_margin', 'safety_index_power'
-    alg_list = [ 'FSAC-A', 'SACL', 'FSAC',] # 'SACL', 'FSAC',
-    lbs = [  'FAC-A', 'SACL', 'FAC', ] # 'SAC', 'SACL', 'FAC',  'margin', 'power'
+    tag2plot = ['num_sampled_steps'] # , 'safety_index_margin', 'safety_index_power'
+    alg_list = [ 'FSAC-A', ] # 'SACL', 'FSAC',
+    lbs = [  'FAC-A',  ] # 'SAC', 'SACL', 'FAC',  'margin', 'power'
     task = ['Unicycle']
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
-    dir_str = '../results/{}/{}/data2plot' # .format(algo name) # /data2plot
+    dir_str = '../results/{}/{}/data2plot2' # .format(algo name) # /data2plot
     return tag2plot, alg_list, task, lbs, palette, goal_perf_list, dir_str
 
 def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
@@ -43,7 +43,7 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
                     print(eval_dir)
                     df_in_one_run_of_one_alg = get_datasets(eval_dir, tag2plot, alg=alg, num_run=num_run)
                 else:
-                    eval_dir = data2plot_dir + '/' + dir + '/logs/evaluator'
+                    eval_dir = data2plot_dir + '/' + dir + '/logs/optimizer'
                     print(eval_dir)
                     eval_file = os.path.join(eval_dir,
                                              [file_name for file_name in os.listdir(eval_dir) if file_name.startswith('events')][0])
@@ -58,7 +58,7 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
                         for v in event.summary.value:
                             t = tf.make_ndarray(v.tensor)
                             for tag in tag2plot:
-                                if tag == v.tag[11:]: # evaluator:11, 31:(optimizer/learner_stats/scalar/)
+                                if tag == v.tag[10:]: # evaluator:11, 31:(optimizer/learner_stats/scalar/)
                                     data_in_one_run_of_one_alg[tag].append((1-SMOOTHFACTOR)*data_in_one_run_of_one_alg[tag][-1] + SMOOTHFACTOR*float(t)
                                                                            if data_in_one_run_of_one_alg[tag] else float(t))
                                     data_in_one_run_of_one_alg['iteration'].append(int(step))
@@ -96,6 +96,7 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
             name = 'sis_para'
             fig_name = '../data_process/figure/' + task + '-' + name + '_n.png'
         plt.savefig(fig_name)
+        total_dataframe.to_csv('./other_data/optimizer.csv')
         # allresults = {}
         # results2print = {}
         #

@@ -81,7 +81,7 @@ def built_FSAC_parser(alg_name):
             parser.add_argument("-" + key, default=val)
         return parser.parse_args()
 
-    parser.add_argument('--motivation', type=str, default='reduce buffer size')  # training testing
+    parser.add_argument('--motivation', type=str, default='change obstacle range')  # training testing
 
     # trainer
     parser.add_argument('--policy_type', type=str, default='PolicyWithAdaSafetyIndex')
@@ -90,7 +90,7 @@ def built_FSAC_parser(alg_name):
     parser.add_argument('--buffer_type', type=str, default='cost')
     parser.add_argument('--optimizer_type', type=str, default='OffPolicyAsyncWithCost')
     parser.add_argument('--off_policy', type=str, default=True)
-    parser.add_argument('--random_seed', type=int, default=2)
+    parser.add_argument('--random_seed', type=int, default=4)
     parser.add_argument('--penalty_start', type=int, default=0)
     parser.add_argument('--demo', type=bool, default=False)
 
@@ -112,8 +112,8 @@ def built_FSAC_parser(alg_name):
     parser.add_argument('--double_QC', type=bool, default=False)
     parser.add_argument('--adaptive_safety_index', type=bool, default=True)
     parser.add_argument('--adaptive_si_start', type=int, default=100000)
-    parser.add_argument('--adaptive_si_interval', type=int, default=50)
-    parser.add_argument('--init_sis_paras', type=list, default=[0.3, 1.0, 2.0]) # # margin, k, power
+    parser.add_argument('--adaptive_si_interval', type=int, default=24)
+    parser.add_argument('--init_sis_paras', type=list, default=[0.3, 1.0, 1.0]) # # margin, k, power
 
     # worker
     parser.add_argument('--batch_size', type=int, default=128)
@@ -121,7 +121,7 @@ def built_FSAC_parser(alg_name):
     parser.add_argument('--explore_sigma', type=float, default=None)
 
     # buffer
-    parser.add_argument('--max_buffer_size', type=int, default=50000)
+    parser.add_argument('--max_buffer_size', type=int, default=500000)
     parser.add_argument('--replay_starts', type=int, default=3000)
     parser.add_argument('--replay_batch_size', type=int, default=256)
     parser.add_argument('--replay_alpha', type=float, default=0.6)
@@ -157,7 +157,7 @@ def built_FSAC_parser(alg_name):
     if alpha == 'auto':
         parser.add_argument('--target_entropy', type=float, default=-2)
     parser.add_argument('--alpha_lr_schedule', type=list, default=[8e-5, 2000000, 8e-6])
-    parser.add_argument('--k_lr_schedule', type=list, default=[2e-5, 100000, 1e-6])
+    parser.add_argument('--k_lr_schedule', type=list, default=[8e-6, 100000, 1e-6])
     parser.add_argument('--policy_only', type=bool, default=False)
     parser.add_argument('--double_Q', type=bool, default=True)
     parser.add_argument('--target', type=bool, default=True)
@@ -180,13 +180,13 @@ def built_FSAC_parser(alg_name):
 
     # Optimizer (PABAL)
     parser.add_argument('--max_sampled_steps', type=int, default=0)
-    parser.add_argument('--max_iter', type=int, default=300000)
+    parser.add_argument('--max_iter', type=int, default=600000)
     parser.add_argument('--num_workers', type=int, default=NUM_WORKER)
     parser.add_argument('--num_learners', type=int, default=NUM_LEARNER)
     parser.add_argument('--num_buffers', type=int, default=NUM_BUFFER)
     parser.add_argument('--max_weight_sync_delay', type=int, default=300)
     parser.add_argument('--grads_queue_size', type=int, default=25)
-    parser.add_argument('--grads_max_reuse', type=int, default=2)
+    parser.add_argument('--grads_max_reuse', type=int, default=0)
     parser.add_argument('--eval_interval', type=int, default=10000) # 1000
     parser.add_argument('--save_interval', type=int, default=200000) # 200000
     parser.add_argument('--log_interval', type=int, default=100) # 100
