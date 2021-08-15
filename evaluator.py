@@ -493,7 +493,7 @@ class EvaluatorWithCost(object):
         self.preprocessor.set_params(params)
 
     def run_evaluation(self, iteration):
-        self.env.set_sis_paras(self.policy_with_value.get_sis_paras.numpy())
+        # self.env.set_sis_paras(self.policy_with_value.get_sis_paras.numpy()) # todo: change when experiment in aaai paper
         with self.eval_timer:
             self.iteration = iteration
             if self.args.num_eval_agent == 1:

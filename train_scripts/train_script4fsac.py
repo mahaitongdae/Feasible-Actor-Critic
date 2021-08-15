@@ -95,7 +95,7 @@ def built_FSAC_parser(alg_name):
     parser.add_argument('--demo', type=bool, default=False)
 
     # env
-    parser.add_argument('--env_id', default='Unicycle-v0')
+    parser.add_argument('--env_id', default='Safexp-CustomGoal2-v0') # ['Unicycle-v0']
     parser.add_argument('--num_agent', type=int, default=1)
     parser.add_argument('--num_future_data', type=int, default=0)
 
@@ -110,10 +110,10 @@ def built_FSAC_parser(alg_name):
     parser.add_argument('--cost_lim', type=float, default=0.0)
     parser.add_argument('--mlp_lam', default=True)
     parser.add_argument('--double_QC', type=bool, default=False)
-    parser.add_argument('--adaptive_safety_index', type=bool, default=True)
+    parser.add_argument('--adaptive_safety_index', type=bool, default=False)
     parser.add_argument('--adaptive_si_start', type=int, default=100000)
     parser.add_argument('--adaptive_si_interval', type=int, default=24)
-    parser.add_argument('--init_sis_paras', type=list, default=[0.3, 1.0, 1.0]) # # margin, k, power
+    parser.add_argument('--init_sis_paras', type=list, default=[0.3, 1.0, 2.0]) # # margin, k, power
 
     # worker
     parser.add_argument('--batch_size', type=int, default=128)
@@ -143,20 +143,20 @@ def built_FSAC_parser(alg_name):
     parser.add_argument('--value_num_hidden_layers', type=int, default=2)
     parser.add_argument('--value_num_hidden_units', type=int, default=256)
     parser.add_argument('--value_hidden_activation', type=str, default='elu')
-    parser.add_argument('--value_lr_schedule', type=list, default=[8e-5, 4000000, 1e-6])
-    parser.add_argument('--cost_value_lr_schedule', type=list, default=[8e-5, 4000000, 1e-6])
+    parser.add_argument('--value_lr_schedule', type=list, default=[8e-5, 2000000, 1e-6])
+    parser.add_argument('--cost_value_lr_schedule', type=list, default=[8e-5, 2000000, 1e-6])
     parser.add_argument('--policy_model_cls', type=str, default='MLP')
     parser.add_argument('--policy_num_hidden_layers', type=int, default=2)
     parser.add_argument('--policy_num_hidden_units', type=int, default=256)
     parser.add_argument('--policy_hidden_activation', type=str, default='elu')
     parser.add_argument('--policy_out_activation', type=str, default='linear')
-    parser.add_argument('--policy_lr_schedule', type=list, default=[3e-5, 2000000, 1e-6])
-    parser.add_argument('--lam_lr_schedule', type=list, default=[8e-6, 300000, 1e-6])
+    parser.add_argument('--policy_lr_schedule', type=list, default=[3e-5, 1000000, 1e-6])
+    parser.add_argument('--lam_lr_schedule', type=list, default=[5e-6, 150000, 1e-6])
     parser.add_argument('--alpha', default='auto')  # 'auto' 0.02
     alpha = parser.parse_args().alpha
     if alpha == 'auto':
         parser.add_argument('--target_entropy', type=float, default=-2)
-    parser.add_argument('--alpha_lr_schedule', type=list, default=[8e-5, 2000000, 8e-6])
+    parser.add_argument('--alpha_lr_schedule', type=list, default=[8e-5, 1000000, 8e-6])
     parser.add_argument('--k_lr_schedule', type=list, default=[8e-6, 100000, 1e-6])
     parser.add_argument('--policy_only', type=bool, default=False)
     parser.add_argument('--double_Q', type=bool, default=True)
@@ -180,7 +180,7 @@ def built_FSAC_parser(alg_name):
 
     # Optimizer (PABAL)
     parser.add_argument('--max_sampled_steps', type=int, default=0)
-    parser.add_argument('--max_iter', type=int, default=600000)
+    parser.add_argument('--max_iter', type=int, default=1000000)
     parser.add_argument('--num_workers', type=int, default=NUM_WORKER)
     parser.add_argument('--num_learners', type=int, default=NUM_LEARNER)
     parser.add_argument('--num_buffers', type=int, default=NUM_BUFFER)
@@ -216,7 +216,10 @@ def built_parser(alg_name):
         register_custom_env()
     env = gym.make(args.env_id) #  **vars(args)
     args.obs_dim, args.act_dim = int(env.observation_space.shape[0]), int(env.action_space.shape[0])
-    # args.obs_scale = [1.] * args.obs_dim
+    if args.env_id.startswith('Safexp'):
+        args.batch_size = 1024
+        args.obs_scale = [1.] * args.obs_dim
+        args.action_range = 10.0
     if args.alg_name == 'SACL':
         assert not args.mlp_lam
         assert not args.adaptive_safety_index
@@ -262,4 +265,4 @@ def main(alg_name):
 
 
 if __name__ == '__main__':
-    main('FSAC-A')
+    main('FSAC')
