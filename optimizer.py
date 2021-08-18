@@ -95,9 +95,9 @@ class UpdateThread(threading.Thread):
 
             qc_grad, lam_grad = self.local_worker.apply_gradients(self.iteration, self.grad, ascent=True)
             ascent = self.ascent
-            if ascent:
-                # print('apply ascent cstr')
-                self.local_worker.apply_ascent_gradients(self.iteration, qc_grad, lam_grad)
+            # if ascent:
+            #     # print('apply ascent cstr')
+            #     self.local_worker.apply_ascent_gradients(self.iteration, qc_grad, lam_grad)
             # else:
             #     print('apply uncstr')
             #     self.local_worker.apply_gradients(self.iteration, self.grad, ascent=False)
@@ -469,7 +469,7 @@ class OffPolicyAsyncOptimizerWithCost(object):
                 if self.update_thread.ascent:
                     # logger.info('Start dual ascent')
                     self.learn_tasks.add(learner, learner.compute_gradient.remote(samples[:-1], rb, samples[-1],
-                                                                                    self.local_worker.iteration, ascent=True))
+                                                                                    self.local_worker.iteration, ascent=False))
                 else:
                     self.learn_tasks.add(learner, learner.compute_gradient.remote(samples[:-1], rb, samples[-1],
                                                                                   self.local_worker.iteration, ascent=False))

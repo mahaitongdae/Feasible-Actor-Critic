@@ -61,12 +61,12 @@ def built_FAC_parser():
     parser.add_argument('--random_seed', type=int, default=2)
     parser.add_argument('--env_id', default='Multi-PointGoal2-v0')
 #   parser.add_argument('test_dir', default=None)
-#    parser.add_argument('test_iter_list', default=None)
+    parser.add_argument('--test_iter_list', default=[3200000, 4000000])
     mode = parser.parse_args().mode
 
     if mode == 'testing':
-        # test_dir = '../results/FAC/experiment-2021-04-14-06-36-37_success'
-        test_dir = parser.parse_args().test_dir
+        test_dir = '../results/FAC/PointGoal/PointGoal2-2021-08-15-23-30-33'
+#        test_dir = parser.parse_args().test_dir
         test_iter_list = parser.parse_args().test_iter_list
         params = json.loads(open(test_dir + '/config.json').read())
         time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -210,7 +210,7 @@ def built_FAC_parser():
     time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     env_id = parser.parse_args().env_id
     task = env_id.split('-')[1]
-    results_dir = './results/FAC/{task}/{experiment}-{time}'.format(task=task[:-1],
+    results_dir = '../results/FAC/{task}/{experiment}-{time}'.format(task=task[:-1],
                                                                       experiment=task,
                                                                       time=time_now)
     parser.add_argument('--result_dir', type=str, default=results_dir)
