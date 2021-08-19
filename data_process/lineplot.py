@@ -16,55 +16,14 @@ sns.set(style="darkgrid")
 SMOOTHFACTOR = 0.1
 SMOOTHFACTOR2 = 3
 DIV_LINE_WIDTH = 50
-txt_store_alg_list = ['CPO', 'PPO-Lagrangian']
-
-def load_from_event():
-    tag2plot = ['episode_return']
-    eval_summarys = tf.data.TFRecordDataset(['/home/mahaitong/PycharmProjects/mpg/results/FSAC/CarButton1-2021-04-20-14-40-50/logs/evaluator/events.out.tfevents.1618900860.mahaitong-virtual-machine.33389.1126.v2'])
-    data_in_one_run_of_one_alg = {key: [] for key in tag2plot}
-    data_in_one_run_of_one_alg.update({'iteration': []})
-    for eval_summary in eval_summarys:
-        event = event_pb2.Event.FromString(eval_summary.numpy())
-        for v in event.summary.value:
-            t = tf.make_ndarray(v.tensor)
-            for tag in tag2plot:
-                if tag == v.tag[11:]:
-                    data_in_one_run_of_one_alg[tag].append(
-                        (1 - SMOOTHFACTOR) * data_in_one_run_of_one_alg[tag][-1] + SMOOTHFACTOR * float(t)
-                        if data_in_one_run_of_one_alg[tag] else float(t))
-                    data_in_one_run_of_one_alg['iteration'].append(int(event.step))
-    a = 1
-
-def load_from_tf1_event(eval_dir, tag2plot):
-    from tensorboard.backend.event_processing import event_accumulator
-
-    tag2plot = []
-    ea = event_accumulator.EventAccumulator('/home/mahaitong/PycharmProjects/mpg/results/FSAC/tf1_test/fsac')
-    ea.Reload()
-    tag2plot += ea.scalars.Keys()
-    data_in_one_run_of_one_alg = {key: [] for key in tag2plot}
-    data_in_one_run_of_one_alg.update({'iteration': []})
-    valid_tag_list = [i for i in tag2plot if i in ea.scalars.Keys()]
-    for tag in valid_tag_list:
-        events = ea.scalars.Items(tag)
-        for idx, event in enumerate(events):
-            t = event.value
-            data_in_one_run_of_one_alg[tag].append(
-                (1 - SMOOTHFACTOR) * data_in_one_run_of_one_alg[tag][-1] + SMOOTHFACTOR * float(t)
-                if data_in_one_run_of_one_alg[tag] else float(t))
-            if tag == valid_tag_list[0]:
-                data_in_one_run_of_one_alg['iteration'].append(int(event.step))
-
-    return data_in_one_run_of_one_alg
+txt_store_alg_list = ['CPO', 'PPO-L', 'TRPO-L']
 
 def help_func():
-    tag2plot = ['episode_cost']
-    alg_list = ['FSAC','SAC-Lagrangian', 'CPO', 'PPO-Lagrangian'] # 'SAC',
-    lbs = ['FSAC','SAC-Lagrangian',  'CPO', 'PPO-Lagrangian'] # 'SAC',
-    task = ['CarButton']
-    #todo: CarGoal: sac
-    #todo: CarButton: sac choose better fac
-    # todo: CarPush: ???
+    tag2plot = ['episode_return','episode_cost' ] #  'episode_return',
+    # tag2plot = ['cost_rate','num_sampled_costs']
+    alg_list = ['FSAC', 'TRPO-L', 'CPO', 'PPO-L'] # 'SAC',
+    lbs = ['SSAC','TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'] # 'SAC',
+    task = ['CustomGoal2', 'CustomGoalPillar2']
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
     dir_str = '../results/{}/{}' # .format(algo name) # /data2plot
@@ -77,75 +36,67 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
     for task in task_list:
         df_list = []
         for alg in alg_list:
-
-            data2plot_dir = dir_str.format(alg, task)
-            data2plot_dirs_list = dirs_dict_for_plot[alg] if dirs_dict_for_plot is not None else os.listdir(data2plot_dir)
+            dir_str_alg = dir_str + '/data2plot' if alg not in txt_store_alg_list else dir_str
+            data2plot_dir = dir_str_alg.format(alg, task)
+            data2plot_dirs_list = dirs_dict_for_plot[alg] if dirs_dict_for_plot is not None else os.listdir(
+                data2plot_dir)
             for num_run, dir in enumerate(data2plot_dirs_list):
                 if alg in txt_store_alg_list:
                     eval_dir = data2plot_dir + '/' + dir
                     print(eval_dir)
                     df_in_one_run_of_one_alg = get_datasets(eval_dir, tag2plot, alg=alg, num_run=num_run)
                 else:
-                    eval_dir = data2plot_dir + '/' + dir + '/logs/evaluator'
-                    print(eval_dir)
-                    eval_file = os.path.join(eval_dir,
-                                             [file_name for file_name in os.listdir(eval_dir) if file_name.startswith('events')][0])
-                    eval_summarys = tf.data.TFRecordDataset([eval_file])
-                    data_in_one_run_of_one_alg = {key: [] for key in tag2plot}
-                    data_in_one_run_of_one_alg.update({'iteration': []})
-                    for eval_summary in eval_summarys:
-                        event = event_pb2.Event.FromString(eval_summary.numpy())
-                        for v in event.summary.value:
-                            t = tf.make_ndarray(v.tensor)
-                            for tag in tag2plot:
-                                if tag == v.tag[11:]:
+                    data_in_one_run_of_one_alg = dict()
+                    for tag in tag2plot:
+                        eval_dir = data2plot_dir + '/' + dir + '/logs/evaluator' if tag.startswith(
+                            'ep') else data2plot_dir + '/' + dir + '/logs/optimizer'
+                        print(eval_dir)
+                        eval_file = os.path.join(eval_dir,
+                                                 [file_name for file_name in os.listdir(eval_dir) if file_name.startswith('events')][0])
+                        eval_summarys = tf.data.TFRecordDataset([eval_file])
+
+                        data_in_one_run_of_one_alg.update({tag: []})
+                        data_in_one_run_of_one_alg.update({'iteration': []})
+                        for eval_summary in eval_summarys:
+                            event = event_pb2.Event.FromString(eval_summary.numpy())
+                            if event.step % 10000 != 0: continue
+                            for v in event.summary.value:
+                                t = tf.make_ndarray(v.tensor)
+                                tag_in_events = 'evaluation/' + tag if tag.startswith('ep') else 'optimizer/' + tag
+                                if tag_in_events == v.tag:
+                                    if tag == 'episode_return':
+                                        t = np.clip(t, -2.0, 100.0)
                                     data_in_one_run_of_one_alg[tag].append((1-SMOOTHFACTOR)*data_in_one_run_of_one_alg[tag][-1] + SMOOTHFACTOR*float(t)
                                                                            if data_in_one_run_of_one_alg[tag] else float(t))
-                                    data_in_one_run_of_one_alg['iteration'].append(int(event.step))
-                    len1, len2 = len(data_in_one_run_of_one_alg['iteration']), len(data_in_one_run_of_one_alg[tag2plot[0]])
-                    period = int(len1/len2)
-                    data_in_one_run_of_one_alg['iteration'] = [data_in_one_run_of_one_alg['iteration'][i*period]/10000. for i in range(len2)]
+                                    data_in_one_run_of_one_alg['iteration'].append(int(event.step/10000.))
+                    # len1, len2 = len(data_in_one_run_of_one_alg['iteration']), len(data_in_one_run_of_one_alg[tag2plot[0]])
+                    # period = int(len1/len2)
+                    # data_in_one_run_of_one_alg['iteration'] = [data_in_one_run_of_one_alg['iteration'][i*period] for i in range(len2)]
 
                     data_in_one_run_of_one_alg.update(dict(algorithm=alg, num_run=num_run))
                     df_in_one_run_of_one_alg = pd.DataFrame(data_in_one_run_of_one_alg)
                 df_list.append(df_in_one_run_of_one_alg)
         total_dataframe = df_list[0].append(df_list[1:], ignore_index=True) if len(df_list) > 1 else df_list[0]
-        figsize = (6,6)
-        axes_size = [0.11, 0.11, 0.89, 0.89] #if env == 'path_tracking_env' else [0.095, 0.11, 0.905, 0.89]
-        fontsize = 16
-        f1 = plt.figure(1, figsize=figsize)
-        ax1 = f1.add_axes(axes_size)
-        sns.lineplot(x="iteration", y="episode_cost", hue="algorithm",
-                     data=total_dataframe, linewidth=2, palette=palette
-                     )
-        base = 40 if task == 'CarPush' else 100
-        basescore = sns.lineplot(x=[0., 300.], y=[base, base], linewidth=2, color='black', linestyle='--')
-        print(ax1.lines[0].get_data())
-        ax1.set_ylabel('')
-        ax1.set_xlabel("Iteration [x10000]", fontsize=fontsize)
-        handles, labels = ax1.get_legend_handles_labels()
-        labels = lbs
-        ax1.legend(handles=handles+[basescore.lines[-1]], labels=labels+['Constraint'], loc='upper right', frameon=False, fontsize=fontsize)
-        plt.yticks(fontsize=fontsize)
-        plt.xticks(fontsize=fontsize)
-        # plt.show()
-        fig_name = '../data_process/figure/' + task+'-'+tag + '.png'
-        plt.savefig(fig_name)
-        # allresults = {}
-        # results2print = {}
-        #
-        # for alg, group in total_dataframe.groupby('algorithm'):
-        #     allresults.update({alg: []})
-        #     for ite, group1 in group.groupby('iteration'):
-        #         mean = group1['episode_return'].mean()
-        #         std = group1['episode_return'].std()
-        #         allresults[alg].append((mean, std))
-        #
-        # for alg, result in allresults.items():
-        #     mean, std = sorted(result, key=lambda x: x[0])[-1]
-        #     results2print.update({alg: [mean, 2 * std]})
-        #
-        # print(results2print)
+        for tag in tag2plot:
+            figsize = (6,6)
+            axes_size = [0.13, 0.11, 0.86, 0.89]
+            fontsize = 16
+            f1 = plt.figure(figsize=figsize)
+            ax1 = f1.add_axes(axes_size)
+            sns.lineplot(x="iteration", y=tag, hue="algorithm",
+                         data=total_dataframe, linewidth=2, palette=palette
+                         )
+            ax1.set_ylabel('')
+            ax1.set_xlabel("Iteration [x10000]", fontsize=fontsize)
+            handles, labels = ax1.get_legend_handles_labels()
+            labels = lbs
+            ax1.legend(handles=handles, labels=labels, loc='best', frameon=False, fontsize=fontsize)
+            plt.yticks(fontsize=fontsize)
+            plt.xticks(fontsize=fontsize)
+            plt.xlim([0, 150])
+            # plt.show()
+            fig_name = '../data_process/figure/' + task+'-'+tag + '.png'
+            plt.savefig(fig_name)
 
 
 def get_datasets(logdir, tag2plot, alg, condition=None, smooth=SMOOTHFACTOR2, num_run=0):
@@ -168,11 +119,14 @@ def get_datasets(logdir, tag2plot, alg, condition=None, smooth=SMOOTHFACTOR2, nu
                 print('Could not read from %s'%os.path.join(root,'progress.txt'))
                 continue
             performance = 'AverageTestEpRet' if 'AverageTestEpRet' in exp_data else 'AverageEpRet'
-            exp_data.insert(len(exp_data.columns),'Performance',exp_data[performance])
+            exp_data.insert(len(exp_data.columns),'episode_return',exp_data[performance])
             exp_data.insert(len(exp_data.columns),'algorithm',alg)
             exp_data.insert(len(exp_data.columns), 'iteration', exp_data['TotalEnvInteracts']/10000)
             exp_data.insert(len(exp_data.columns), 'episode_cost', exp_data['AverageEpCost'])
+            exp_data.insert(len(exp_data.columns), 'cost_rate', exp_data['CostRate'])
+            exp_data.insert(len(exp_data.columns), 'num_sampled_costs', exp_data['CumulativeCost'])
             exp_data.insert(len(exp_data.columns), 'num_run', num_run)
+
             datasets.append(exp_data)
             data = datasets
 
