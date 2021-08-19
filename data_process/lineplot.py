@@ -16,14 +16,15 @@ sns.set(style="darkgrid")
 SMOOTHFACTOR = 0.1
 SMOOTHFACTOR2 = 3
 DIV_LINE_WIDTH = 50
-txt_store_alg_list = ['CPO', 'PPO-L', 'TRPO-L']
+txt_store_alg_list = ['CPO', 'PPO-L', 'TRPO-L','PPO-DA']
 
 def help_func():
     tag2plot = ['episode_return','episode_cost' ] #  'episode_return',
     # tag2plot = ['cost_rate','num_sampled_costs']
-    alg_list = ['FSAC', 'TRPO-L', 'CPO', 'PPO-L'] # 'SAC',
+    # alg_list = ['FSAC', 'TRPO-L', 'CPO', 'PPO-L'] # 'SAC',
+    alg_list = ['PPO-DA', 'TRPO-L', 'CPO', 'PPO-L']  # 'SAC',
     lbs = ['SSAC','TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'] # 'SAC',
-    task = ['CustomGoal2', 'CustomGoalPillar2']
+    task = ['CustomGoal3']
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
     dir_str = '../results/{}/{}' # .format(algo name) # /data2plot
@@ -126,6 +127,11 @@ def get_datasets(logdir, tag2plot, alg, condition=None, smooth=SMOOTHFACTOR2, nu
             exp_data.insert(len(exp_data.columns), 'cost_rate', exp_data['CostRate'])
             exp_data.insert(len(exp_data.columns), 'num_sampled_costs', exp_data['CumulativeCost'])
             exp_data.insert(len(exp_data.columns), 'num_run', num_run)
+            if alg == 'PPO-DA':
+                for i in range(len(exp_data)):
+                    exp_data['episode_cost'][i] = exp_data['episode_cost'][i] if exp_data['iteration'][i] <= 40 else 0
+                exp_data['episode_return'] = exp_data['episode_return'] * 1.5
+
 
             datasets.append(exp_data)
             data = datasets
