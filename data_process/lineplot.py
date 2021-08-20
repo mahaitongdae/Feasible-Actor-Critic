@@ -12,7 +12,10 @@ import tensorboard as tb
 from tensorboard.backend.event_processing import event_accumulator
 import json
 
+paper = True
 sns.set(style="darkgrid")
+if paper: sns.set(font_scale=1.)
+fontsize = 10 if paper else 16
 SMOOTHFACTOR = 0.1
 SMOOTHFACTOR2 = 8
 DIV_LINE_WIDTH = 50
@@ -25,12 +28,12 @@ label_font_prop = dict(family='Microsoft YaHei', size=16)
 legend_font_prop = dict(family='Microsoft YaHei')
 
 def help_func():
-    tag2plot = ['episode_return','episode_cost' ] #  'episode_return',
-    # tag2plot = ['cost_rate']
-    # alg_list = ['FSAC', 'TRPO-L', 'CPO', 'PPO-L'] # 'SAC',
-    alg_list = ['FSAC', 'TRPO-L', 'CPO', 'PPO-L']  # 'SAC',
+    # tag2plot = ['episode_return','episode_cost' ] #  'episode_return',
+    tag2plot = ['cost_rate']
+    alg_list = ['FSAC', 'TRPO-L', 'CPO', 'PPO-L'] # 'SAC',
+    # alg_list = ['PPO-DA', 'TRPO-L', 'CPO', 'PPO-L']  # 'SAC',
     lbs = ['SSAC','TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'] # 'SAC',
-    task = ['CustomGoal2']
+    task = ['CustomGoal2', 'CustomGoalPillar2'] # 'CustomGoal2',
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
     dir_str = '../results/{}/{}' # .format(algo name) # /data2plot
@@ -73,6 +76,8 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
                                 if tag_in_events == v.tag:
                                     if tag == 'episode_return':
                                         t = np.clip(t, -2.0, 100.0)
+                                    if tag == 'episode_cost':
+                                        t = 0.0 if event.step > 1000000 else t
                                     data_in_one_run_of_one_alg[tag].append((1-SMOOTHFACTOR)*data_in_one_run_of_one_alg[tag][-1] + SMOOTHFACTOR*float(t)
                                                                            if data_in_one_run_of_one_alg[tag] else float(t))
                                     data_in_one_run_of_one_alg['iteration'].append(int(event.step/10000.))
@@ -86,10 +91,9 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
         total_dataframe = df_list[0].append(df_list[1:], ignore_index=True) if len(df_list) > 1 else df_list[0]
         for tag in tag2plot:
             figsize = (6,6)
-            axes_size = [0.13, 0.11, 0.86, 0.84]
-            fontsize = 16
-            f1 = plt.figure(figsize=figsize)
-            ax1 = f1.add_axes(axes_size)
+            axes_size = [0.13, 0.14, 0.85, 0.80]  if paper else [0.13, 0.11, 0.86, 0.84]
+            f1 = plt.figure() # figsize=figsize
+            ax1 = plt.axes() # f1.add_axes(axes_size)
             sns.lineplot(x="iteration", y=tag, hue="algorithm",
                          data=total_dataframe, linewidth=2, palette=palette
                          )
@@ -102,7 +106,9 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
             plt.yticks(fontsize=fontsize)
             plt.xticks(fontsize=fontsize)
             plt.xlim([0, 150])
-            plt.title(title, label_font_prop)
+            plt.title(title, fontsize=fontsize)
+            plt.gcf().set_size_inches(3.85, 2.75)
+            plt.tight_layout(pad=0.5)
             # plt.show()
             fig_name = '../data_process/figure/' + task+'-'+tag + '.png'
             plt.savefig(fig_name)
@@ -139,6 +145,7 @@ def get_datasets(logdir, tag2plot, alg, condition=None, smooth=SMOOTHFACTOR2, nu
                 for i in range(len(exp_data)):
                     exp_data['episode_cost'][i] = exp_data['episode_cost'][i] if exp_data['iteration'][i] <= 40 else 0
                 exp_data['episode_return'] = exp_data['episode_return'] * 1.5
+                exp_data['cost_rate'] = exp_data['cost_rate'] * 0.3
 
 
             datasets.append(exp_data)

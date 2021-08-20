@@ -199,12 +199,14 @@ def plot_phi_curve_in_single_run(log):
     data = np.load(log, allow_pickle=True)
     df_list = []
     for idx in range(data.shape[0]):
+        if idx == 0: continue
         data_dict = data[idx]
-        data_dict.update(dict(step = np.arange(1000), run=idx))
+        data_dict.update(dict(step = np.linspace(0,200,1000), run=idx))
+        data_dict['phi_list'] = data_dict['phi_list'] / np.max(np.abs(data_dict['phi_list']))
         df_list.append(pd.DataFrame(data[idx]))
     total_dataframe = df_list[0].append(df_list[1:], ignore_index=True) if len(df_list) > 1 else df_list[0]
     figsize = (9, 3)
-    axes_size = [0.05, 0.22, 0.93, 0.75]  # if env == 'path_tracking_env' else [0.095, 0.11, 0.905, 0.89]
+    axes_size = [0.12, 0.22, 0.86, 0.75]  # if env == 'path_tracking_env' else [0.095, 0.11, 0.905, 0.89]
     fontsize = 16
     f1 = plt.figure(1, figsize=figsize)
     ax1 = f1.add_axes(axes_size)
@@ -213,13 +215,50 @@ def plot_phi_curve_in_single_run(log):
                  data=total_dataframe, linewidth=2, palette = "bright"
                  )
     base = 0
-    basescore = sns.lineplot(x=[0., 1000.], y=[base, base], linewidth=2, color='black', linestyle='--')
-    ax1.set_ylabel('')
+    basescore = sns.lineplot(x=[0., 200.], y=[base, base], linewidth=2, color='black', linestyle='--')
+    ax1.set_ylabel('Safety Index', fontsize=fontsize)
     ax1.set_xlabel("Step", fontsize=fontsize)
     plt.yticks(fontsize=fontsize)
     plt.xticks(fontsize=fontsize)
     # plt.show()
-    fig_name = '../data_process/figure/phi.png'
+    fig_name = '../data_process/figure/phi_regularized.png'
+    plt.savefig(fig_name)
+
+
+def plot_phi_box(log):
+    data = np.load(log, allow_pickle=True)
+    df_list = []
+    k = 0
+    for idx in [0,3,4,1,2]:
+        # if idx == 0: continue
+        data_dict = data[idx]
+        data_dict.update(dict(step = np.linspace(0,200,1000), run=k))
+        data_dict['phi_list'] = data_dict['phi_list'] / np.max(np.abs(data_dict['phi_list']))
+        delta_phi = [0.0]
+        for i in range(999):
+            delta_phi.append(data_dict['phi_list'][i+1] - np.clip(data_dict['phi_list'][i], 0, 1))
+        data_dict.update(dict(delta_phi=delta_phi))
+        df_list.append(pd.DataFrame(data_dict))
+        k += 1
+    total_dataframe = df_list[0].append(df_list[1:], ignore_index=True) if len(df_list) > 1 else df_list[0]
+    figsize = (9, 3)
+    axes_size = [0.15, 0.22, 0.83, 0.75]  # if env == 'path_tracking_env' else [0.095, 0.11, 0.905, 0.89]
+    fontsize = 16
+    f1 = plt.figure(1, figsize=figsize)
+    ax1 = f1.add_axes(axes_size)
+    # for tag in tag2plot:
+    # sns.lineplot(x="step", y='phi_list', hue="run",
+    #              data=total_dataframe, linewidth=2, palette = "bright"
+    #              )
+    sns.boxplot(x="run", y='delta_phi', data=total_dataframe)
+    # base = 0
+    # basescore = sns.lineplot(x=[0., 200.], y=[base, base], linewidth=2, color='black', linestyle='--')
+    ax1.set_ylabel('Regularized Delta \n Safety Index', fontsize=fontsize)
+    ax1.set_xlabel("Noise Levels", fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
+    plt.xticks(fontsize=fontsize)
+    # plt.show()
+    fig_name = '../data_process/figure/phi_box.png'
     plt.savefig(fig_name)
 
 
