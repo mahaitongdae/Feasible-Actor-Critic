@@ -65,16 +65,16 @@ NUM_BUFFER = 10
 def built_FSAC_parser(alg_name):
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--mode', type=str, default='training') # training testing
+    parser.add_argument('--mode', type=str, default='testing') # training testing
     mode = parser.parse_args().mode
 
     if mode == 'testing':
-        test_dir = '../results/FSAC/CustomGoal2/CustomGoal2-2021-07-08-00-24-06'
+        test_dir = '../results/FSAC/CustomGoalPillar3/data2plot/CustomGoalPillar3-2021-08-19-11-15-40'
         params = json.loads(open(test_dir + '/config.json').read())
         time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         test_log_dir = params['log_dir'] + '/tester/test-{}'.format(time_now)
         params.update(dict(test_dir=test_dir,
-                           test_iter_list=[1000000],
+                           test_iter_list=[1400000],
                            test_log_dir=test_log_dir,
                            num_eval_episode=5,
                            num_eval_agent=1,

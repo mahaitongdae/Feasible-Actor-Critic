@@ -14,17 +14,23 @@ import json
 
 sns.set(style="darkgrid")
 SMOOTHFACTOR = 0.1
-SMOOTHFACTOR2 = 3
+SMOOTHFACTOR2 = 8
 DIV_LINE_WIDTH = 50
 txt_store_alg_list = ['CPO', 'PPO-L', 'TRPO-L','PPO-DA']
+env_name_dict = dict(CustomGoal2='Hazards-0.15', CustomGoal3='Hazards-0.30',
+                     CustomGoalPillar2='Pillars-0.15',CustomGoalPillar3='Pillar-0.30')
+tag_name_dict = dict(episode_return='Average Episode Return', episode_cost='Average Episode Costs',
+                     cost_rate='Cost Rate',num_sampled_costs='Accumulative Costs')
+label_font_prop = dict(family='Microsoft YaHei', size=16)
+legend_font_prop = dict(family='Microsoft YaHei')
 
 def help_func():
     tag2plot = ['episode_return','episode_cost' ] #  'episode_return',
-    # tag2plot = ['cost_rate','num_sampled_costs']
+    # tag2plot = ['cost_rate']
     # alg_list = ['FSAC', 'TRPO-L', 'CPO', 'PPO-L'] # 'SAC',
-    alg_list = ['PPO-DA', 'TRPO-L', 'CPO', 'PPO-L']  # 'SAC',
+    alg_list = ['FSAC', 'TRPO-L', 'CPO', 'PPO-L']  # 'SAC',
     lbs = ['SSAC','TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'] # 'SAC',
-    task = ['CustomGoal3']
+    task = ['CustomGoal2']
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
     dir_str = '../results/{}/{}' # .format(algo name) # /data2plot
@@ -80,13 +86,14 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
         total_dataframe = df_list[0].append(df_list[1:], ignore_index=True) if len(df_list) > 1 else df_list[0]
         for tag in tag2plot:
             figsize = (6,6)
-            axes_size = [0.13, 0.11, 0.86, 0.89]
+            axes_size = [0.13, 0.11, 0.86, 0.84]
             fontsize = 16
             f1 = plt.figure(figsize=figsize)
             ax1 = f1.add_axes(axes_size)
             sns.lineplot(x="iteration", y=tag, hue="algorithm",
                          data=total_dataframe, linewidth=2, palette=palette
                          )
+            title = env_name_dict[task] + ' ' + tag_name_dict[tag]
             ax1.set_ylabel('')
             ax1.set_xlabel("Iteration [x10000]", fontsize=fontsize)
             handles, labels = ax1.get_legend_handles_labels()
@@ -95,6 +102,7 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
             plt.yticks(fontsize=fontsize)
             plt.xticks(fontsize=fontsize)
             plt.xlim([0, 150])
+            plt.title(title, label_font_prop)
             # plt.show()
             fig_name = '../data_process/figure/' + task+'-'+tag + '.png'
             plt.savefig(fig_name)
