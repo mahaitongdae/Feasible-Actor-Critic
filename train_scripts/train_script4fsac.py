@@ -65,7 +65,7 @@ NUM_BUFFER = 10
 def built_FSAC_parser(alg_name):
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--mode', type=str, default='testing') # training testing
+    parser.add_argument('--mode', type=str, default='training') # training testing
     mode = parser.parse_args().mode
 
     if mode == 'testing':
@@ -94,12 +94,12 @@ def built_FSAC_parser(alg_name):
     parser.add_argument('--buffer_type', type=str, default='cost')
     parser.add_argument('--optimizer_type', type=str, default='OffPolicyAsyncWithCost')
     parser.add_argument('--off_policy', type=str, default=True)
-    parser.add_argument('--random_seed', type=int, default=4)
+    parser.add_argument('--random_seed', type=int, default=0)
     parser.add_argument('--penalty_start', type=int, default=0)
     parser.add_argument('--demo', type=bool, default=False)
 
     # env
-    parser.add_argument('--env_id', default='Safexp-CustomGoalPillar3-v0') # ['Unicycle-v0']
+    parser.add_argument('--env_id', default='Safexp-CustomPush1-v0') # ['Unicycle-v0']
     parser.add_argument('--num_agent', type=int, default=1)
     parser.add_argument('--num_future_data', type=int, default=0)
 

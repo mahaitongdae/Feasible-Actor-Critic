@@ -33,7 +33,7 @@ def help_func():
     alg_list = ['FSAC', 'TRPO-L', 'CPO', 'PPO-L'] # 'SAC',
     # alg_list = ['PPO-DA', 'TRPO-L', 'CPO', 'PPO-L']  # 'SAC',
     lbs = ['SSAC','TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'] # 'SAC',
-    task = ['CustomGoal2', 'CustomGoalPillar2'] # 'CustomGoal2',
+    task = ['CustomGoalPillar3'] # 'CustomGoal2',
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
     dir_str = '../results/{}/{}' # .format(algo name) # /data2plot
