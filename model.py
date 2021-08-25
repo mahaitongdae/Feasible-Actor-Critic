@@ -96,7 +96,9 @@ class AttnNet(Model):
 
         self.attn_layers = [EncoderLayer(d_model, num_heads, d_ff, dropout)
                             for _ in range(self.num_layers-1)]
-        self.out_attn = MultiHeadAttention(1, d_model, dropout=dropout)
+        self.out_attn = MultiHeadAttention(1, d_model, 
+                                           kernel_initializer=tf.keras.initializers.Orthogonal(np.sqrt(2.)),
+                                           dropout=dropout)
         self.build(input_shape=[(None, 1, ego_dim), (None, max_seq_len-1, con_dim),
                                 (None, max_seq_len, max_seq_len), (None, max_seq_len, max_seq_len)])
 

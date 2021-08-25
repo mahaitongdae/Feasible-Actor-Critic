@@ -303,7 +303,7 @@ class EvaluatorWithCost(object):
                 processed_obs = self.preprocessor.tf_process_obses(obs)
                 processed_obs, lam = self.policy_with_value.compute_lam(
                                          processed_obs[:, :self.args.obs_dim], 
-                                         processed_obs[:, self.args.obs_dim:], 
+                                         processed_obs[:, self.args.obs_dim:-1], 
                                          False
                                      )
                 action = self.policy_with_value.compute_mode(processed_obs)
@@ -331,7 +331,7 @@ class EvaluatorWithCost(object):
                 processed_obs = self.preprocessor.tf_process_obses(obs)
                 processed_obs, lam = self.policy_with_value.compute_lam(
                                          processed_obs[:, :self.args.obs_dim], 
-                                         processed_obs[:, self.args.obs_dim:], 
+                                         processed_obs[:, self.args.obs_dim:-1], 
                                          False
                                      )
                 action = self.policy_with_value.compute_mode(processed_obs)
@@ -394,7 +394,7 @@ class EvaluatorWithCost(object):
             processed_obs = self.preprocessor.tf_process_obses(obses)
             processed_obs, lam = self.policy_with_value.compute_lam(
                                          processed_obs[:, :self.args.obs_dim], 
-                                         processed_obs[:, self.args.obs_dim:], 
+                                         processed_obs[:, self.args.obs_dim:-1], 
                                          False
                                      )
             actions = self.policy_with_value.compute_mode(processed_obs)

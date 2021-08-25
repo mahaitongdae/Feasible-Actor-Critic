@@ -52,7 +52,8 @@ class EncoderLayer(tf.keras.layers.Layer):
     def __init__(self, d_model, num_heads, d_ff, dropout=0.1):
         super(EncoderLayer, self).__init__()
 
-        self.mha = MultiHeadAttention(num_heads, d_model, 
+        self.mha = MultiHeadAttention(num_heads, d_model,
+                                      kernel_initializer=tf.keras.initializers.Orthogonal(np.sqrt(2.)),
                                       dropout=dropout)
         self.ffn = pointwise_feedforward(d_model, d_ff)
 

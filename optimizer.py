@@ -92,12 +92,21 @@ class UpdateThread(threading.Thread):
             # except ValueError:
             #     self.grad = [tf.zeros_like(grad) for grad in self.grad]
             #     logger.info('Grad is nan!, zero it')
-
-            qc_grad, lam_grad = self.local_worker.apply_gradients(self.iteration, self.grad, ascent=True)
-            ascent = self.ascent
+            
+            # FAC original update:
+            # qc_grad, lam_grad = self.local_worker.apply_gradients(self.iteration, self.grad, ascent=True)
+            # ascent = self.ascent
             # if ascent:
             #     # print('apply ascent cstr')
             #     self.local_worker.apply_ascent_gradients(self.iteration, qc_grad, lam_grad)
+            
+            # TODO (0823) update with backbone: fill in the method in worker.py
+            if not self.ascent:
+                self.local_worker.apply_gradients_with_backbone(self.iteration, self.grad)
+            else:
+                qc_grad, lam_grad = self.local_worker.apply_gradients(self.iteration, self.grad, ascent=True)
+                self.local_worker.apply_ascent_gradients(self.iteration, qc_grad, lam_grad)
+            
             # else:
             #     print('apply uncstr')
             #     self.local_worker.apply_gradients(self.iteration, self.grad, ascent=False)
@@ -469,10 +478,15 @@ class OffPolicyAsyncOptimizerWithCost(object):
                 if self.update_thread.ascent:
                     # logger.info('Start dual ascent')
                     self.learn_tasks.add(learner, learner.compute_gradient.remote(samples[:-1], rb, samples[-1],
-                                                                                    self.local_worker.iteration, ascent=False))
+                                                                                    self.local_worker.iteration, ascent=True))
                 else:
-                    self.learn_tasks.add(learner, learner.compute_gradient.remote(samples[:-1], rb, samples[-1],
-                                                                                  self.local_worker.iteration, ascent=False))
+                    # self.learn_tasks.add(learner, learner.compute_gradient.remote(samples[:-1], rb, samples[-1],
+                    #                                                               self.local_worker.iteration, ascent=False))
+                    # TODO (0823): fill in the method in sac.py
+                    self.learn_tasks.add(
+                        learner, learner.compute_gradient_together.remote(samples[:-1], rb, samples[-1], 
+                                                                         self.local_worker.iteration)
+                    )
                 if self.update_thread.inqueue.full():
                     self.num_grads_dropped += 1
                 self.update_thread.inqueue.put([grads, learner_stats])

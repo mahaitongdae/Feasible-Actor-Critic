@@ -199,6 +199,11 @@ class OffPolicyWorkerWithCost(object):
     def apply_ascent_gradients(self, iteration, qc_grad, lam_grad):
         self.iteration = iteration
         self.policy_with_value.apply_ascent_gradients(self.tf.constant(iteration, dtype=self.tf.int32), qc_grad, lam_grad)
+    
+    def apply_gradients_with_backbone(self, iteration, grads):
+        # (done) TODO (0823): fill in the method in policy.py
+        self.iteration = iteration
+        self.policy_with_value.apply_gradients_with_backbone(self.tf.constant(iteration, dtype=self.tf.int32), grads)
 
     def get_ppc_params(self):
         return self.preprocessor.get_params()
@@ -219,7 +224,7 @@ class OffPolicyWorkerWithCost(object):
             processed_obs = self.preprocessor.process_obs(self.obs)
             processed_obs, lam = self.policy_with_value.compute_lam(
                                     processed_obs[:, :self.args.obs_dim], \
-                                    processed_obs[:, self.args.obs_dim:], \
+                                    processed_obs[:, self.args.obs_dim:-1], \
                                     False
                                  )
             judge_is_nan([processed_obs])

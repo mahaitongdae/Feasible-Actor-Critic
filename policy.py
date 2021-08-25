@@ -565,6 +565,53 @@ class AttentionPolicyWithMu(tf.Module):
         assert self.double_Q
         if iteration % self.dual_ascent_interval == 0 and self.constrained:
             self.Lam_optimizer.apply_gradients(zip(lam_grad, self.Lam.trainable_weights))
+    
+    @tf.function
+    def apply_gradients_with_backbone(self, iteration, grads):
+        # （done) TODO (0823): implement the method, must update Lam
+        if self.policy_only:
+            policy_grad = grads
+            self.policy_optimizer.apply_gradients(zip(policy_grad, self.policy.trainable_weights))
+        else:
+            if self.double_Q:
+                q_weights_len = len(self.Q1.trainable_weights)
+                policy_weights_len = len(self.policy.trainable_weights)
+                lam_weights_len = len(self.Lam.trainable_weights)
+                q1_grad, q2_grad, qc1_grad, qc2_grad, policy_grad =\
+                    grads[:q_weights_len], \
+                    grads[q_weights_len:2 * q_weights_len],\
+                    grads[2 * q_weights_len:3 * q_weights_len], \
+                    grads[3 * q_weights_len:4 * q_weights_len], \
+                    grads[4 * q_weights_len:4 * q_weights_len + policy_weights_len]
+                lam_grad = grads[
+                           4 * q_weights_len + policy_weights_len: 4 * q_weights_len + policy_weights_len + lam_weights_len]
+                self.Q1_optimizer.apply_gradients(zip(q1_grad, self.Q1.trainable_weights))
+                self.Q2_optimizer.apply_gradients(zip(q2_grad, self.Q2.trainable_weights))
+                self.QC1_optimizer.apply_gradients(zip(qc1_grad, self.QC1.trainable_weights))
+                if self.double_QC:
+                    self.QC2_optimizer.apply_gradients(zip(qc2_grad, self.QC2.trainable_weights))
+                if iteration % self.delay_update == 0:
+                    self.policy_optimizer.apply_gradients(zip(policy_grad, self.policy.trainable_weights))
+                    self.Lam_optimizer.apply_gradients(zip(lam_grad, self.Lam.trainable_weights))
+                    self.update_policy_target()
+                    self.update_all_Q_target()
+                    if self.alpha == 'auto':
+                        alpha_grad = grads[-1:]
+                        self.alpha_optimizer.apply_gradients(zip(alpha_grad, self.alpha_model.trainable_weights))
+            else:
+                q_weights_len = len(self.Q1.trainable_weights)
+                policy_weights_len = len(self.policy.trainable_weights)
+                q1_grad, policy_grad = grads[:q_weights_len], grads[q_weights_len:q_weights_len+policy_weights_len]
+                self.Q1_optimizer.apply_gradients(zip(q1_grad, self.Q1.trainable_weights))
+                if iteration % self.delay_update == 0:
+                    self.policy_optimizer.apply_gradients(zip(policy_grad, self.policy.trainable_weights))
+                    self.Lam_optimizer.apply_gradients(zip(lam_grad, self.Lam.trainable_weights))
+                    if self.alpha == 'auto':
+                        alpha_grad = grads[-1:]
+                        self.alpha_optimizer.apply_gradients(zip(alpha_grad, self.alpha_model.trainable_weights))
+                    if self.target:
+                        self.update_policy_target()
+                        self.update_Q1_target()
 
     def update_all_Q_target(self):
         self.update_Q1_target()

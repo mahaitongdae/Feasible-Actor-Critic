@@ -50,9 +50,9 @@ NAME2OPTIMIZERCLS = dict([('OffPolicyAsync', OffPolicyAsyncOptimizer),
                           ('SingleProcessOffPolicy', SingleProcessOffPolicyOptimizer)])
 NAME2POLICYCLS = dict([('PolicyWithMu',PolicyWithMu), ('AttentionPolicyWithMu', AttentionPolicyWithMu)])
 NAME2EVALUATORCLS = dict([('Evaluator', Evaluator), ('EvaluatorWithCost', EvaluatorWithCost), ('None', None)])
-NUM_WORKER = 4
-NUM_LEARNER = 12
-NUM_BUFFER = 4
+NUM_WORKER = 8
+NUM_LEARNER = 16
+NUM_BUFFER = 8
 
 def built_FAC_parser():
     parser = argparse.ArgumentParser()
@@ -90,7 +90,6 @@ def built_FAC_parser():
     parser.add_argument('--buffer_type', type=str, default='cost')
     parser.add_argument('--optimizer_type', type=str, default='OffPolicyAsyncWithCost')
     parser.add_argument('--off_policy', type=str, default=True)
-    parser.add_argument('--penalty_start', type=int, default=1500000)
     parser.add_argument('--demo', type=bool, default=False)
 
     # env
@@ -132,7 +131,7 @@ def built_FAC_parser():
 
     # Optimizer (PABAL)
     parser.add_argument('--max_sampled_steps', type=int, default=0)
-    parser.add_argument('--max_iter', type=int, default=4000000)  # todo
+    parser.add_argument('--max_iter', type=int, default=6000000)  # todo
     parser.add_argument('--delay_update', type=int, default=4) # todo
     parser.add_argument('--dual_ascent_interval', type=int, default=12) # todo
     parser.add_argument('--num_workers', type=int, default=NUM_WORKER)
@@ -200,9 +199,9 @@ def built_FAC_parser():
     parser.add_argument('--rew_shift', type=float, default=0.)
 
     # ENV dims
-    parser.add_argument('--ego_dim', type=int, default=12)
+    parser.add_argument('--ego_dim', type=int, default=28) # 12
     parser.add_argument('--con_dim', type=int, default=16)
-    parser.add_argument('--max_seq_len', type=int, default=7)
+    parser.add_argument('--max_seq_len', type=int, default=6) # 7
     parser.add_argument('--con_num', type=int, default=5)
 
 
@@ -230,7 +229,7 @@ def built_parser(alg_name):
 
     env = gym.make(args.env_id) #  **vars(args)
     args.obs_dim, args.act_dim = int(env.observation_space.shape[0]), int(env.action_space.shape[0])
-    args.obs_dim -= args.max_seq_len
+    args.obs_dim -= 7
     print(args.obs_dim)
     args.obs_scale = [1.] * args.obs_dim
 
@@ -241,7 +240,7 @@ def main(alg_name):
     args = built_parser(alg_name)
     logger.info('begin training agents with parameter {}'.format(str(args)))
     if args.mode == 'training':
-        ray.init(object_store_memory=16384*1024*1024)
+        ray.init(object_store_memory=32 * 1024**3)
         os.makedirs(args.result_dir)
         with open(args.result_dir + '/config.json', 'w', encoding='utf-8') as f:
             json.dump(vars(args), f, ensure_ascii=False, indent=4)
