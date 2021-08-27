@@ -60,7 +60,7 @@ def built_FAC_parser():
     parser.add_argument('--mode', type=str, default='training') # training testing
     parser.add_argument('--random_seed', type=int, default=2)
     parser.add_argument('--env_id', default='Multi-PointGoal2-v0')
-#   parser.add_argument('test_dir', default=None)
+#   parser.add_argument('--test_dir', default=None)
     parser.add_argument('--test_iter_list', default=[3200000, 4000000])
     mode = parser.parse_args().mode
 
@@ -139,7 +139,7 @@ def built_FAC_parser():
     parser.add_argument('--num_buffers', type=int, default=NUM_BUFFER)
     parser.add_argument('--max_weight_sync_delay', type=int, default=300)
     parser.add_argument('--grads_queue_size', type=int, default=25)
-    parser.add_argument('--grads_max_reuse', type=int, default=2)
+    parser.add_argument('--grads_max_reuse', type=int, default=1)
     parser.add_argument('--eval_interval', type=int, default=10000)
     parser.add_argument('--save_interval', type=int, default=200000)
     parser.add_argument('--log_interval', type=int, default=100)
@@ -174,8 +174,6 @@ def built_FAC_parser():
     parser.add_argument('--drop_rate', type=float, default=0.1)
     parser.add_argument('--backbone_cls', type=str, default='Attn')
     parser.add_argument('--attention_lam', default=True)
-    # parser.add_argument('--mu_lr_schedule', type=list, default=[3e-5, 150000, 1e-6])
-    # parser.add_argument('--mu_update_interval', type=int, default=4)
 
     if alpha == 'auto':
         parser.add_argument('--target_entropy', type=float, default=-2) # todo

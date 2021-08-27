@@ -27,7 +27,7 @@ def get_angles(pos, i, d_model, max_len=1000):
     return pos * angle_rates
 
 def positional_encoding(position, d_model):
-    p = np.ones((position, 1), dtype=np.int8)
+    p = np.ones((position, 1))
     p[0] = 0
     angle_rads = get_angles(p,
                             np.arange(d_model)[np.newaxis, :],
@@ -63,11 +63,19 @@ class EncoderLayer(tf.keras.layers.Layer):
         self.dropout = tf.keras.layers.Dropout(dropout)
 
     def call(self, x, training, mask):
-        attn_output = self.mha(x, x, x, mask, training=training)  # (batch_size, input_seq_len, d_model)
-        out1 = self.ln1(x + attn_output)  # (batch_size, input_seq_len, d_model)
+        ## post-LN
+        # attn_output = self.mha(x, x, x, mask, training=training)  # (batch_size, input_seq_len, d_model)
+        # out1 = self.ln1(x + attn_output)  # (batch_size, input_seq_len, d_model)
 
-        ffn_output = self.ffn(out1)  # (batch_size, input_seq_len, d_model)
-        ffn_output = self.dropout(ffn_output, training=training)
-        out2 = self.ln2(out1 + ffn_output)  # (batch_size, input_seq_len, d_model)
+        # ffn_output = self.ffn(out1)  # (batch_size, input_seq_len, d_model)
+        # ffn_output = self.dropout(ffn_output, training=training)
+        # out2 = self.ln2(out1 + ffn_output)  # (batch_size, input_seq_len, d_model)
+
+        ## pre-LN
+        x = self.ln1(x)
+        out1 = x + self.mha(x, x, x, mask, training=training)
+
+        out1 = self.ln2(out1)
+        out2 = self.dropout(out1 + self.ffn(out1), training=training)
 
         return out2

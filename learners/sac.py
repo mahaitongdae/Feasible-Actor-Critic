@@ -414,7 +414,7 @@ class SACLearnerWithCost(object):
                     assert lams.shape == violation.shape, print(violation.shape, lams.shape)
                     complementary_slackness = self.tf.reduce_mean(
                         self.tf.multiply(lams, self.tf.stop_gradient(violation)))
-                lam_loss = - complementary_slackness
+                # lam_loss = - complementary_slackness
             
             lam_loss = (q_loss1 + q_loss2)/2 + lagrangian
 
