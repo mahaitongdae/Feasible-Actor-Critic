@@ -19,7 +19,7 @@ fontsize = 10 if paper else 16
 SMOOTHFACTOR = 0.1
 SMOOTHFACTOR2 = 8
 DIV_LINE_WIDTH = 50
-txt_store_alg_list = ['CPO', 'PPO-L', 'TRPO-L','PPO-DA']
+txt_store_alg_list = ['CPO', 'PPO-L', 'TRPO-L','PPO-DA','FSAC-0']
 env_name_dict = dict(CustomGoal2='Hazards-0.15', CustomGoal3='Hazards-0.30',
                      CustomGoalPillar2='Pillars-0.15',CustomGoalPillar3='Pillar-0.30')
 tag_name_dict = dict(episode_return='Average Episode Return', episode_cost='Average Episode Costs',
@@ -32,9 +32,11 @@ def help_func():
     # tag2plot = ['episode_return','episode_cost' ] #  'episode_return',
     tag2plot = ['ep_phi_increase_times']
     # tag2plot = ['cost_rate']
-    alg_list = ['FSAC', 'FSAC-A'] # , 'TRPO-L', 'CPO', 'PPO-L'
+    alg_list = ['FSAC-A','FSAC', 'FSAC-0'] #, 'TRPO-L', 'CPO', 'PPO-L'
     # alg_list = ['PPO-DA', 'TRPO-L', 'CPO', 'PPO-L']  # 'SAC',
-    lbs = ['SSAC', 'FSAC-A' ] # , 'TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'
+    # lbs = ['SSAC', 'FSAC-A' ] # , 'TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'
+    # lbs = [r'$\phi_h$', r'$\phi_\xi$']
+    lbs = [r'FAC w/ $\phi_\xi$', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$'] # , 'TRPO-L', 'CPO', 'PPO-L'
     task = ['CustomGoal2'] # 'CustomGoal2',
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
@@ -144,6 +146,7 @@ def get_datasets(logdir, tag2plot, alg, condition=None, smooth=SMOOTHFACTOR2, nu
             exp_data.insert(len(exp_data.columns), 'episode_cost', exp_data['AverageEpCost'])
             exp_data.insert(len(exp_data.columns), 'cost_rate', exp_data['CostRate'])
             exp_data.insert(len(exp_data.columns), 'num_sampled_costs', exp_data['CumulativeCost'])
+            exp_data.insert(len(exp_data.columns), 'ep_phi_increase_times', exp_data['AverageEpPhiCstrVio'])
             exp_data.insert(len(exp_data.columns), 'num_run', num_run)
             if alg == 'PPO-DA':
                 for i in range(len(exp_data)):
