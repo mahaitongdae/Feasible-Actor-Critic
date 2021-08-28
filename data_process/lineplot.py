@@ -29,14 +29,16 @@ label_font_prop = dict(family='Microsoft YaHei', size=16)
 legend_font_prop = dict(family='Microsoft YaHei')
 
 def help_func():
-    # tag2plot = ['episode_return','episode_cost' ] #  'episode_return',
-    tag2plot = ['ep_phi_increase_times']
+    tag2plot = ['episode_cost' ] #  'episode_return',
+    # tag2plot = ['ep_phi_increase_times']
     # tag2plot = ['cost_rate']
-    alg_list = ['FSAC-A','FSAC', 'FSAC-0'] #, 'TRPO-L', 'CPO', 'PPO-L'
+    # alg_list = ['FSAC-A','FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L'] #
+    alg_list = ['TRPO-L', 'CPO', 'PPO-L']  #
     # alg_list = ['PPO-DA', 'TRPO-L', 'CPO', 'PPO-L']  # 'SAC',
     # lbs = ['SSAC', 'FSAC-A' ] # , 'TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'
     # lbs = [r'$\phi_h$', r'$\phi_\xi$']
-    lbs = [r'FAC w/ $\phi_\xi$', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$'] # , 'TRPO-L', 'CPO', 'PPO-L'
+    # lbs = [r'FAC w/ $\phi_\xi$', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$', 'TRPO-L', 'CPO', 'PPO-L'] #
+    lbs = [ 'TRPO-L', 'CPO', 'PPO-L']  #
     task = ['CustomGoal2'] # 'CustomGoal2',
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
@@ -116,7 +118,7 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
             plt.gcf().set_size_inches(3.85, 2.75)
             plt.tight_layout(pad=0.5)
             # plt.show()
-            fig_name = '../data_process/figure/' + task+'-'+tag + '.png'
+            fig_name = '../data_process/figure/motivation_' + task+'-'+tag + '.png'
             plt.savefig(fig_name)
 
 
@@ -146,7 +148,9 @@ def get_datasets(logdir, tag2plot, alg, condition=None, smooth=SMOOTHFACTOR2, nu
             exp_data.insert(len(exp_data.columns), 'episode_cost', exp_data['AverageEpCost'])
             exp_data.insert(len(exp_data.columns), 'cost_rate', exp_data['CostRate'])
             exp_data.insert(len(exp_data.columns), 'num_sampled_costs', exp_data['CumulativeCost'])
-            exp_data.insert(len(exp_data.columns), 'ep_phi_increase_times', exp_data['AverageEpPhiCstrVio'])
+            try:
+                exp_data.insert(len(exp_data.columns), 'ep_phi_increase_times', exp_data['AverageEpPhiCstrVio'])
+            except: pass
             exp_data.insert(len(exp_data.columns), 'num_run', num_run)
             if alg == 'PPO-DA':
                 for i in range(len(exp_data)):
