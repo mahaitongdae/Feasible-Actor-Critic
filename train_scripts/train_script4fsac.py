@@ -54,9 +54,9 @@ NAME2OPTIMIZERCLS = dict([('OffPolicyAsync', OffPolicyAsyncOptimizer),
 NAME2POLICYCLS = dict([('PolicyWithQs', PolicyWithQs),('PolicyWithMu',PolicyWithMu),
                        ('PolicyWithAdaSafetyIndex', PolicyWithAdaSafetyIndex)])
 NAME2EVALUATORCLS = dict([('Evaluator', Evaluator), ('EvaluatorWithCost', EvaluatorWithCost), ('None', None)])
-NUM_WORKER = 10
-NUM_LEARNER = 10
-NUM_BUFFER = 10
+NUM_WORKER = 4
+NUM_LEARNER = 4
+NUM_BUFFER = 4
 
 def built_FSAC_parser(alg_name):
     parser = argparse.ArgumentParser()
