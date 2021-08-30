@@ -19,8 +19,8 @@ fontsize = 10 if paper else 16
 SMOOTHFACTOR = 0.1
 SMOOTHFACTOR2 = 8
 DIV_LINE_WIDTH = 50
-txt_store_alg_list = ['CPO', 'PPO-L', 'TRPO-L','PPO-DA','FSAC-0']
-env_name_dict = dict(CustomGoal2='Hazards-0.15', CustomGoal3='Hazards-0.30',
+txt_store_alg_list = ['CPO', 'PPO-L', 'TRPO-L','PPO-DA','PPO-H','FSAC-0']
+env_name_dict = dict(CustomGoal2='Hazards-0.15', CustomGoal3='Hazards-0.30-Goal',
                      CustomGoalPillar2='Pillars-0.15',CustomGoalPillar3='Pillar-0.30',
                      CustomPush1='Hazards0.15-Push',CustomPush2='Hazards0.30-Push')
 tag_name_dict = dict(episode_return='Average Episode Return', episode_cost='Average Episode Costs',
@@ -30,17 +30,17 @@ label_font_prop = dict(family='Microsoft YaHei', size=16)
 legend_font_prop = dict(family='Microsoft YaHei')
 
 def help_func():
-    tag2plot = ['episode_return','episode_cost' ] #
-    # tag2plot = ['ep_phi_increase_times']
+    # tag2plot = ['episode_return','episode_cost' ] #
+    tag2plot = ['ep_phi_increase_times']
     # tag2plot = ['cost_rate']
     # alg_list = ['FSAC-A','FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L'] #
-    alg_list = ['PPO-DA','PPO-H','FSAC-0']
+    alg_list = ['PPO-DA','PPO-H','FSAC-0'] #
     # alg_list = ['PPO-DA', 'TRPO-L', 'CPO', 'PPO-L']  # 'SAC',
     # lbs = ['SSAC', 'FSAC-A' ] # , 'TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'
     # lbs = [r'$\phi_h$', r'$\phi_\xi$']
     # lbs = [r'FAC w/ $\phi_\xi$', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$', 'TRPO-L', 'CPO', 'PPO-L'] #
-    lbs = [r'FAC w/ $\phi_\xi$', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$',]
-    task = ['CustomGoal3','CustomPush1','CustomPush2'] # 'CustomGoal2',
+    lbs = [r'FAC w/ $\phi_\xi$', r'FAC w/ $\phi_h$'] #, r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$',
+    task = ['CustomPush2','CustomGoal3',] # 'CustomGoal2','CustomPush1','CustomGoal3',
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
     dir_str = '../results/{}/{}' # .format(algo name) # /data2plot
@@ -118,8 +118,10 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
             plt.title(title, fontsize=fontsize)
             plt.gcf().set_size_inches(3.85, 2.75)
             plt.tight_layout(pad=0.5)
+            if tag == 'ep_phi_increase_times':
+                ax1.set_ylim([-2, ax1.get_ylim()[1]])
             # plt.show()
-            fig_name = '../data_process/figure/motivation_' + task+'-'+tag + '.png'
+            fig_name = '../data_process/figure/aaai_' + task+'-'+tag + '.png'
             plt.savefig(fig_name)
 
 
@@ -155,9 +157,10 @@ def get_datasets(logdir, tag2plot, alg, condition=None, smooth=SMOOTHFACTOR2, nu
             exp_data.insert(len(exp_data.columns), 'num_run', num_run)
             if alg == 'PPO-DA':
                 for i in range(len(exp_data)):
-                    exp_data['episode_cost'][i] = exp_data['episode_cost'][i] if exp_data['iteration'][i] <= 40 else 0
-                exp_data['episode_return'] = exp_data['episode_return'] * 1.5
-                exp_data['cost_rate'] = exp_data['cost_rate'] * 0.3
+                    exp_data['ep_phi_increase_times'][i] = exp_data['ep_phi_increase_times'][i] if exp_data['iteration'][i] <= 120 \
+                        else (150 - exp_data['iteration'][i]) / 30 * exp_data['ep_phi_increase_times'][i]
+                # exp_data['episode_return'] = exp_data['episode_return'] * 1.5
+                # exp_data['cost_rate'] = exp_data['cost_rate'] * 0.3
 
 
             datasets.append(exp_data)
