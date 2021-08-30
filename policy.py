@@ -588,11 +588,12 @@ class AttentionPolicyWithMu(tf.Module):
                 self.Q1_optimizer.apply_gradients(zip(q1_grad, self.Q1.trainable_weights))
                 self.Q2_optimizer.apply_gradients(zip(q2_grad, self.Q2.trainable_weights))
                 self.QC1_optimizer.apply_gradients(zip(qc1_grad, self.QC1.trainable_weights))
+                self.Lam_optimizer.apply_gradients(zip(lam_grad, self.Lam.trainable_weights))
                 if self.double_QC:
                     self.QC2_optimizer.apply_gradients(zip(qc2_grad, self.QC2.trainable_weights))
                 if iteration % self.delay_update == 0:
                     self.policy_optimizer.apply_gradients(zip(policy_grad, self.policy.trainable_weights))
-                    self.Lam_optimizer.apply_gradients(zip(lam_grad, self.Lam.trainable_weights))
+                    # self.Lam_optimizer.apply_gradients(zip(lam_grad, self.Lam.trainable_weights))
                     self.update_policy_target()
                     self.update_all_Q_target()
                     if self.alpha == 'auto':
@@ -603,9 +604,10 @@ class AttentionPolicyWithMu(tf.Module):
                 policy_weights_len = len(self.policy.trainable_weights)
                 q1_grad, policy_grad = grads[:q_weights_len], grads[q_weights_len:q_weights_len+policy_weights_len]
                 self.Q1_optimizer.apply_gradients(zip(q1_grad, self.Q1.trainable_weights))
+                self.Lam_optimizer.apply_gradients(zip(lam_grad, self.Lam.trainable_weights))
                 if iteration % self.delay_update == 0:
                     self.policy_optimizer.apply_gradients(zip(policy_grad, self.policy.trainable_weights))
-                    self.Lam_optimizer.apply_gradients(zip(lam_grad, self.Lam.trainable_weights))
+                    # self.Lam_optimizer.apply_gradients(zip(lam_grad, self.Lam.trainable_weights))
                     if self.alpha == 'auto':
                         alpha_grad = grads[-1:]
                         self.alpha_optimizer.apply_gradients(zip(alpha_grad, self.alpha_model.trainable_weights))
@@ -782,8 +784,13 @@ class AttentionPolicyWithMu(tf.Module):
                                              create_attention_mask(batch_size, self.max_seq_len, isAttended),
                                              create_mu_mask(batch_size, self.max_seq_len),],
                                             training=training)
-            lam_attn = self.tf.reduce_max(self.tf.squeeze(attn_weights[:, :, 0, 2:], axis=1), axis=1)
-            return re_obs[:, 0, :], tf.cast(tf.exp(5*lam_attn)-1, dtype=tf.float32)
+            weights = self.tf.squeeze(attn_weights[:, :, 0, 1:], axis=1) # shape: [B, con_num]
+            assert weights.shape[-1] == self.con_num
+            weights_count = self.tf.reduce_sum( self.tf.cast(weights != 0, tf.float32), axis=-1 )
+            weights_sum = self.tf.reduce_sum(weights, axis=-1)
+            lam_attn = weights_sum / weights_count
+            # return re_obs[:, 0, :], tf.cast(tf.exp(5*lam_attn)-1, dtype=tf.float32)
+            return self.tf.reduce_mean(re_obs, axis=1), tf.cast(tf.exp(4*lam_attn)-1, dtype=tf.float32)
             
 
     @property

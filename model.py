@@ -10,7 +10,7 @@
 import tensorflow as tf
 from tensorflow import Variable
 from tensorflow.keras import Model, Sequential
-from tensorflow.keras.layers import Dense, Dropout, MultiHeadAttention
+from tensorflow.keras.layers import Dense, Dropout, MultiHeadAttention, LayerNormalization
 import numpy as np
 
 from model_utils import positional_encoding, EncoderLayer
@@ -80,25 +80,22 @@ class AttnNet(Model):
         self.num_heads = num_heads
         self.dropout_rate = dropout
 
-        self.ego_embedding = Sequential([Dense(units=d_ff,
+        self.ego_embedding = Sequential([Dense(units=d_model,
                                                kernel_initializer=tf.keras.initializers.Orthogonal(np.sqrt(2.)),
-                                               activation='elu',
                                                dtype=tf.float32),
-                                         Dense(d_model)])
+                                        ])
         self.cons_embedding = Sequential([Dense(units=d_ff,
                                                kernel_initializer=tf.keras.initializers.Orthogonal(np.sqrt(2.)),
-                                               activation='elu',
                                                dtype=tf.float32),
-                                          Dense(d_model)])
+                                         ])
 
         self.pe = positional_encoding(max_seq_len, d_model)
         self.dropout = Dropout(self.dropout_rate)
 
         self.attn_layers = [EncoderLayer(d_model, num_heads, d_ff, dropout)
                             for _ in range(self.num_layers-1)]
-        self.out_attn = MultiHeadAttention(1, d_model, 
-                                           kernel_initializer=tf.keras.initializers.Orthogonal(np.sqrt(2.)),
-                                           dropout=dropout)
+        self.out_attn = MultiHeadAttention(1, d_model, dropout=dropout)
+        self.ln_final = LayerNormalization(epsilon=1e-3)
         self.build(input_shape=[(None, 1, ego_dim), (None, max_seq_len-1, con_dim),
                                 (None, max_seq_len, max_seq_len), (None, max_seq_len, max_seq_len)])
 
