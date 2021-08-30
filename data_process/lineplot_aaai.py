@@ -30,17 +30,18 @@ label_font_prop = dict(family='Microsoft YaHei', size=16)
 legend_font_prop = dict(family='Microsoft YaHei')
 
 def help_func():
-    # tag2plot = ['episode_return','episode_cost' ] #
-    tag2plot = ['ep_phi_increase_times']
-    # tag2plot = ['cost_rate']
-    # alg_list = ['FSAC-A','FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L'] #
-    alg_list = ['PPO-DA','PPO-H','FSAC-0'] #
+    # tag2plot = ['episode_return','episode_cost'] #
+    # tag2plot = ['ep_phi_increase_times']
+    tag2plot = ['cost_rate']
+    alg_list = ['FSAC-A','FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L'] #
+    # alg_list = ['PPO-DA','PPO-H','FSAC-0'] #
+    # alg_list = ['PPO-DA', 'PPO-H', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
     # alg_list = ['PPO-DA', 'TRPO-L', 'CPO', 'PPO-L']  # 'SAC',
     # lbs = ['SSAC', 'FSAC-A' ] # , 'TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'
     # lbs = [r'$\phi_h$', r'$\phi_\xi$']
-    # lbs = [r'FAC w/ $\phi_\xi$', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$', 'TRPO-L', 'CPO', 'PPO-L'] #
-    lbs = [r'FAC w/ $\phi_\xi$', r'FAC w/ $\phi_h$'] #, r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$',
-    task = ['CustomPush2','CustomGoal3',] # 'CustomGoal2','CustomPush1','CustomGoal3',
+    lbs = ['FAC-SIS', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$', 'TRPO-L', 'CPO', 'PPO-L'] #
+    # lbs = ['FAC-SIS', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$',]
+    task = ['CustomGoal2'] # 'CustomGoal2','CustomPush1','CustomGoal3',
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
     dir_str = '../results/{}/{}' # .format(algo name) # /data2plot
