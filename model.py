@@ -84,7 +84,7 @@ class AttnNet(Model):
                                                kernel_initializer=tf.keras.initializers.Orthogonal(np.sqrt(2.)),
                                                dtype=tf.float32),
                                         ])
-        self.cons_embedding = Sequential([Dense(units=d_ff,
+        self.cons_embedding = Sequential([Dense(units=d_model,
                                                kernel_initializer=tf.keras.initializers.Orthogonal(np.sqrt(2.)),
                                                dtype=tf.float32),
                                          ])

@@ -416,7 +416,7 @@ class SACLearnerWithCost(object):
                         self.tf.multiply(lams, self.tf.stop_gradient(violation)))
                 # lam_loss = - complementary_slackness
             
-            lam_loss = (q_loss1 + q_loss2)/2 + lagrangian + qc_loss1
+            lam_loss = q_loss1 * 50 + lagrangian + qc_loss1
 
         distributions_stats = dict(qc1_vals=qc_pred1,q1_vals=q_pred1, q2_vals=q_pred2)
         statistic_dict = dict(policy_entropy=policy_entropy, value_var=value_var, value_mean=value_mean,

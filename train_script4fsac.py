@@ -60,13 +60,13 @@ def built_FAC_parser():
     parser.add_argument('--mode', type=str, default='training') # training testing
     parser.add_argument('--random_seed', type=int, default=2)
     parser.add_argument('--env_id', default='Multi-PointGoal2-v0')
-#   parser.add_argument('--test_dir', default=None)
-    parser.add_argument('--test_iter_list', default=[3200000, 4000000])
+    # parser.add_argument('--test_dir', default=None)
+    parser.add_argument('--test_iter_list', default=[6000000])
     mode = parser.parse_args().mode
 
     if mode == 'testing':
-        test_dir = '../results/FAC/PointGoal/PointGoal2-2021-08-15-23-30-33'
-#        test_dir = parser.parse_args().test_dir
+        test_dir = '../results/FAC/PointGoal/PointGoal2-2021-08-24-10-39-57'
+        # test_dir = parser.parse_args().test_dir
         test_iter_list = parser.parse_args().test_iter_list
         params = json.loads(open(test_dir + '/config.json').read())
         time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
