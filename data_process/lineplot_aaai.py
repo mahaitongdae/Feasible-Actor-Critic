@@ -16,17 +16,20 @@ paper = True
 sns.set(style="darkgrid")
 if paper: sns.set(font_scale=1.)
 fontsize = 10 if paper else 16
-SMOOTHFACTOR = 0.25
-SMOOTHFACTOR2 = 8
+SMOOTHFACTOR = 0.15
+SMOOTHFACTOR2 = 24
 DIV_LINE_WIDTH = 50
 txt_store_alg_list = ['CPO', 'PPO-L', 'TRPO-L','PPO-DA','PPO-H','FSAC-0']
-env_name_dict = dict(CustomGoal2='Hazards-0.15', CustomGoal3='Hazards-0.30-Goal',
+env_name_dict = dict(CustomGoal2='Hazards-0.15-Goal', CustomGoal3='Hazards-0.30-Goal',
                      CustomGoalPillar2='Pillars-0.15',CustomGoalPillar3='Pillar-0.30',
-                     CustomPush1='Hazards0.15-Push',CustomPush2='Hazards0.30-Push')
+                     CustomPush1='Hazards-0.15-Push',CustomPush2='Hazards-0.30-Push')
 tag_name_dict = dict(episode_return='Average Episode Return', episode_cost='Average Episode Costs',
                      cost_rate='Cost Rate', num_sampled_costs='Accumulative Costs',
-                     ep_phi_increase_times='Episode infeasible state num')
-y_lim_dict=dict(CustomPush2_episode_cost=[0, 5],
+                     ep_phi_increase_times='Episode Infeasible States Num')
+y_lim_dict=dict(CustomPush2_episode_cost=[-0.5, 5],
+                CustomPush1_episode_cost=[-0.1, 1],
+                CustomGoal3_episode_cost=[-0.3, 3],
+                CustomGoal2_episode_cost=[-0.1, 1],
                 CustomPush1_ep_phi_increase_times=[-1, 40],
                 CustomPush2_ep_phi_increase_times=[-1, 40])
 label_font_prop = dict(family='Microsoft YaHei', size=16)
@@ -34,17 +37,17 @@ legend_font_prop = dict(family='Microsoft YaHei')
 
 
 def help_func():
-    # tag2plot = ['episode_return','episode_cost'] #
-    tag2plot = ['ep_phi_increase_times']
-    # tag2plot = ['cost_rate']
-    # alg_list = ['FSAC-A','FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L'] #
+    # tag2plot = ['episode_cost','episode_return'] #,'episode_cost', 'episode_return'
+    # tag2plot = ['ep_phi_increase_times']
+    tag2plot = ['cost_rate']
+    alg_list = ['FSAC-A','FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L'] #
     # alg_list = ['PPO-DA','PPO-H','FSAC-0'] #
-    alg_list = ['FSAC-A','FSAC','FSAC-0'] #
+    # alg_list = ['FSAC-A','FSAC','FSAC-0'] # 'FSAC-A'
     # alg_list = ['PPO-DA', 'PPO-H', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
     # lbs = ['SSAC', 'FSAC-A' ] # , 'TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'
     # lbs = [r'$\phi_h$', r'$\phi_\xi$']
-    # lbs = ['FAC-SIS', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$', 'TRPO-L', 'CPO', 'PPO-L'] #
-    lbs = ['FAC-SIS', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$',]
+    lbs = ['FAC-SIS', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$', 'TRPO-L', 'CPO', 'PPO-L'] #
+    # lbs = ['FAC-SIS', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$',]
     task = ['CustomGoal2'] # 'CustomGoal2','CustomPush1','CustomGoal3',
     # task = ['CustomPush1','CustomPush2','CustomGoal3',]  # 'CustomGoal2','CustomPush1','CustomGoal3',
     palette = "bright"
@@ -122,6 +125,7 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
             plt.xticks(fontsize=fontsize)
             plt.xlim([0, 150])
             fig_handle = task +'_' + tag
+            print(fig_handle)
             if fig_handle in y_lim_dict.keys():
                 ax1.set_ylim(*y_lim_dict.get(fig_handle))
             plt.title(title, fontsize=fontsize)
@@ -171,8 +175,11 @@ def get_datasets(logdir, tag2plot, alg, condition=None, smooth=SMOOTHFACTOR2, nu
                     )
                     exp_data['ep_phi_increase_times'][i] = exp_data['ep_phi_increase_times'][i] if exp_data['iteration'][i] <= 100 \
                         else (150 - exp_data['iteration'][i]) / 50 * exp_data['ep_phi_increase_times'][i]
+                    exp_data['episode_cost'][i] = exp_data['episode_cost'][i] if \
+                    exp_data['iteration'][i] <= 120 \
+                        else 0
                 # exp_data['episode_return'] = exp_data['episode_return'] * 1.5
-                exp_data['cost_rate'] = exp_data['cost_rate'] * 0.3
+                exp_data['cost_rate'] = exp_data['cost_rate'] * 0.7
 
 
             datasets.append(exp_data)
