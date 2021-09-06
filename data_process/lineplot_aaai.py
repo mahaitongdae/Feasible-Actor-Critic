@@ -37,9 +37,9 @@ legend_font_prop = dict(family='Microsoft YaHei')
 
 
 def help_func():
-    # tag2plot = ['episode_cost','episode_return'] #,'episode_cost', 'episode_return'
-    # tag2plot = ['ep_phi_increase_times']
-    tag2plot = ['cost_rate']
+    tag2plot = ['episode_cost','episode_return'] #,'episode_cost', 'episode_return'
+    tag2plot = ['ep_phi_increase_times']
+    # tag2plot = ['cost_rate']
     alg_list = ['FSAC-A','FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L'] #
     # alg_list = ['PPO-DA','PPO-H','FSAC-0'] #
     # alg_list = ['FSAC-A','FSAC','FSAC-0'] # 'FSAC-A'
@@ -55,7 +55,7 @@ def help_func():
     dir_str = '../results/{}/{}' # .format(algo name) # /data2plot
     return tag2plot, alg_list, task, lbs, palette, goal_perf_list, dir_str
 
-def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
+def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, hide_legend=False):
     tag2plot, alg_list, task_list, lbs, palette, _, dir_str = help_func()
     df_dict = {}
     df_in_one_run_of_one_alg = {}
@@ -120,7 +120,8 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
             ax1.set_xlabel("Iteration [x10000]", fontsize=fontsize)
             handles, labels = ax1.get_legend_handles_labels()
             labels = lbs
-            ax1.legend(handles=handles, labels=labels, loc='best', frameon=False, fontsize=fontsize)
+            if not hide_legend:
+                ax1.legend(handles=handles, labels=labels, loc='best', frameon=False, fontsize=fontsize)
             plt.yticks(fontsize=fontsize)
             plt.xticks(fontsize=fontsize)
             plt.xlim([0, 150])
@@ -134,8 +135,25 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
             if tag == 'ep_phi_increase_times':
                 ax1.set_ylim([-2, ax1.get_ylim()[1]])
             # plt.show()
-            fig_name = '../data_process/figure/aaai_' + task+'-'+tag + '.png'
+            fig_name = '../data_process/figure/aaai_no_legend_' + task+'-'+tag + '.png' if hide_legend else \
+                '../data_process/figure/aaai_' + task+'-'+tag + '.png'
+            if hide_legend:
+                h, l = ax1.get_legend_handles_labels()
+                ax1.legend().remove()
             plt.savefig(fig_name)
+        if hide_legend:
+            legfig, legax = plt.subplots(figsize=(7.5, 0.75))
+            legax.set_facecolor('white')
+            leg = legax.legend(h, lbs, loc='center', ncol=6, handlelength=1.5,
+                               mode="expand", borderaxespad=0., prop={'size': 13})
+            legax.xaxis.set_visible(False)
+            legax.yaxis.set_visible(False)
+            for line in leg.get_lines():
+                line.set_linewidth(4.0)
+            plt.tight_layout(pad=0.5)
+            fig_name = '../data_process/figure/aaai_legends.png'
+            plt.savefig(fig_name)
+
 
 
 def get_datasets(logdir, tag2plot, alg, condition=None, smooth=SMOOTHFACTOR2, num_run=0):
@@ -264,6 +282,6 @@ def load_from_txt(logdir='../results/CPO/PointGoal/pg1', tag=['episode_cost']):
 
 if __name__ == '__main__':
     # env = 'inverted_pendulum_env'  # inverted_pendulum_env path_tracking_env
-    plot_eval_results_of_all_alg_n_runs()
+    plot_eval_results_of_all_alg_n_runs(hide_legend=True)
     # load_from_tf1_event()
     # load_from_txt()
