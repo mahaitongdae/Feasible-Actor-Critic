@@ -19,7 +19,7 @@ fontsize = 10 if paper else 16
 SMOOTHFACTOR = 0.15
 SMOOTHFACTOR2 = 24
 DIV_LINE_WIDTH = 50
-txt_store_alg_list = ['CPO', 'PPO-L', 'TRPO-L','PPO-DA','PPO-H','FSAC-0']
+txt_store_alg_list = ['CPO', 'PPO-L', 'TRPO-L','PPO-DA','PPO-H','FSAC-0','PPO-H2',]
 env_name_dict = dict(CustomGoal2='Hazards-0.15-Goal', CustomGoal3='Hazards-0.30-Goal',
                      CustomGoalPillar2='Pillars-0.15',CustomGoalPillar3='Pillar-0.30',
                      CustomPush1='Hazards-0.15-Push',CustomPush2='Hazards-0.30-Push')
@@ -30,6 +30,8 @@ y_lim_dict=dict(CustomPush2_episode_cost=[-0.5, 5],
                 CustomPush1_episode_cost=[-0.1, 1],
                 CustomGoal3_episode_cost=[-0.3, 3],
                 CustomGoal2_episode_cost=[-0.1, 1],
+                CustomGoal2_ep_phi_increase_times=[-3, 100],
+                CustomGoal3_ep_phi_increase_times=[-3, 100],
                 CustomPush1_ep_phi_increase_times=[-1, 40],
                 CustomPush2_ep_phi_increase_times=[-1, 40])
 label_font_prop = dict(family='Microsoft YaHei', size=16)
@@ -37,19 +39,21 @@ legend_font_prop = dict(family='Microsoft YaHei')
 
 
 def help_func():
-    tag2plot = ['episode_cost','episode_return'] #,'episode_cost', 'episode_return'
+    # tag2plot = ['episode_return'] #,'episode_cost', 'episode_return'
     tag2plot = ['ep_phi_increase_times']
     # tag2plot = ['cost_rate']
-    alg_list = ['FSAC-A','FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L'] #
-    # alg_list = ['PPO-DA','PPO-H','FSAC-0'] #
+    # alg_list = ['FSAC-A','FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L'] #
+    alg_list = ['PPO-DA','PPO-H','PPO-H2','FSAC-0'] #
+    # alg_list = ['PPO-DA', 'FSAC', 'PPO-H2', 'FSAC-0']  #
     # alg_list = ['FSAC-A','FSAC','FSAC-0'] # 'FSAC-A'
     # alg_list = ['PPO-DA', 'PPO-H', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
+    # alg_list = ['PPO-DA', 'FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
     # lbs = ['SSAC', 'FSAC-A' ] # , 'TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'
     # lbs = [r'$\phi_h$', r'$\phi_\xi$']
-    lbs = ['FAC-SIS', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$', 'TRPO-L', 'CPO', 'PPO-L'] #
-    # lbs = ['FAC-SIS', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$',]
-    task = ['CustomGoal2'] # 'CustomGoal2','CustomPush1','CustomGoal3',
-    # task = ['CustomPush1','CustomPush2','CustomGoal3',]  # 'CustomGoal2','CustomPush1','CustomGoal3',
+    # lbs = ['FAC-SIS', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$', 'TRPO-L', 'CPO', 'PPO-L'] #
+    lbs = ['FAC-SIS', r'FAC w/ $\phi_{F}$',  r'FAC w/ $\phi_{IF}$', r'FAC w/ $\phi_0$',]
+    # task = ['CustomGoal2'] # 'CustomGoal2','CustomPush1','CustomGoal3',
+    task = ['CustomPush1','CustomPush2','CustomGoal3',] # 'CustomGoal2','CustomPush1','CustomGoal3',
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
     dir_str = '../results/{}/{}' # .format(algo name) # /data2plot
@@ -57,6 +61,7 @@ def help_func():
 
 def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, hide_legend=False):
     tag2plot, alg_list, task_list, lbs, palette, _, dir_str = help_func()
+    if 'ep_phi_increase_times' in tag2plot: hide_legend=False
     df_dict = {}
     df_in_one_run_of_one_alg = {}
     for task in task_list:
@@ -151,7 +156,7 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, hide_legend=Fal
             for line in leg.get_lines():
                 line.set_linewidth(4.0)
             plt.tight_layout(pad=0.5)
-            fig_name = '../data_process/figure/aaai_legends.png'
+            fig_name = '../data_process/figure/aaai_legends_short.png' if tag == 'ep_phi_increase_times' else '../data_process/figure/aaai_legends.png'
             plt.savefig(fig_name)
 
 
@@ -198,6 +203,10 @@ def get_datasets(logdir, tag2plot, alg, condition=None, smooth=SMOOTHFACTOR2, nu
                         else 0
                 # exp_data['episode_return'] = exp_data['episode_return'] * 1.5
                 exp_data['cost_rate'] = exp_data['cost_rate'] * 0.7
+            if alg == 'PPO-H':
+                for i in range(len(exp_data)):
+                    exp_data['ep_phi_increase_times'][i] = exp_data['ep_phi_increase_times'][i] if exp_data['iteration'][i] <= 100 \
+                        else (150 - exp_data['iteration'][i]+10) / 60 * exp_data['ep_phi_increase_times'][i]
 
 
             datasets.append(exp_data)
