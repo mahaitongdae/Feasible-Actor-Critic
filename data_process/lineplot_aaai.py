@@ -16,7 +16,7 @@ paper = True
 sns.set(style="darkgrid")
 if paper: sns.set(font_scale=1.)
 fontsize = 10 if paper else 16
-SMOOTHFACTOR = 0.15
+SMOOTHFACTOR = 0.4
 SMOOTHFACTOR2 = 24
 DIV_LINE_WIDTH = 50
 txt_store_alg_list = ['CPO', 'PPO-L', 'TRPO-L','PPO-DA','PPO-H','FSAC-0','PPO-H2',]
@@ -39,21 +39,21 @@ legend_font_prop = dict(family='Microsoft YaHei')
 
 
 def help_func():
-    # tag2plot = ['episode_return'] #,'episode_cost', 'episode_return'
-    tag2plot = ['ep_phi_increase_times']
+    tag2plot = ['episode_cost'] #,'episode_cost', 'episode_return'
+    # tag2plot = ['ep_phi_increase_times']
     # tag2plot = ['cost_rate']
-    # alg_list = ['FSAC-A','FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L'] #
-    alg_list = ['PPO-DA','PPO-H','PPO-H2','FSAC-0'] #
+    alg_list = ['PPO-DA','FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L'] #
+    # alg_list = ['PPO-DA','PPO-H','PPO-H2','FSAC-0'] #
     # alg_list = ['PPO-DA', 'FSAC', 'PPO-H2', 'FSAC-0']  #
     # alg_list = ['FSAC-A','FSAC','FSAC-0'] # 'FSAC-A'
     # alg_list = ['PPO-DA', 'PPO-H', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
     # alg_list = ['PPO-DA', 'FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
     # lbs = ['SSAC', 'FSAC-A' ] # , 'TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'
     # lbs = [r'$\phi_h$', r'$\phi_\xi$']
-    # lbs = ['FAC-SIS', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$', 'TRPO-L', 'CPO', 'PPO-L'] #
-    lbs = ['FAC-SIS', r'FAC w/ $\phi_{F}$',  r'FAC w/ $\phi_{IF}$', r'FAC w/ $\phi_0$',]
-    # task = ['CustomGoal2'] # 'CustomGoal2','CustomPush1','CustomGoal3',
-    task = ['CustomPush1','CustomPush2','CustomGoal3',] # 'CustomGoal2','CustomPush1','CustomGoal3',
+    lbs = ['FAC-SIS', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$', 'TRPO-L', 'CPO', 'PPO-L'] #
+    # lbs = ['FAC-SIS', r'FAC w/ $\phi_{F}$',  r'FAC w/ $\phi_{IF}$', r'FAC w/ $\phi_0$',]
+    task = ['CustomGoal2'] # 'CustomGoal2','CustomPush1','CustomGoal3',
+    # task = ['CustomPush1','CustomPush2','CustomGoal3',] # 'CustomGoal2','CustomPush1','CustomGoal3',
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
     dir_str = '../results/{}/{}' # .format(algo name) # /data2plot
