@@ -19,9 +19,7 @@ import ray
 
 from buffer import *
 from evaluator import Evaluator, EvaluatorWithCost
-from learners.ndpg import NDPGLearner
 from learners.sac import SACLearner, SACLearnerWithCost
-from learners.td3 import TD3Learner
 from optimizer import OffPolicyAsyncOptimizer, SingleProcessOffPolicyOptimizer, OffPolicyAsyncOptimizerWithCost
 from policy import PolicyWithQs, PolicyWithMu, PolicyWithAdaSafetyIndex
 from tester import Tester
@@ -57,7 +55,7 @@ NUM_WORKER = 2
 NUM_LEARNER = 2
 NUM_BUFFER = 2
 
-def built_FAC_parser(alg_name):
+def built_FAC_parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--mode', type=str, default='training') # training testing
@@ -99,7 +97,7 @@ def built_FAC_parser(alg_name):
     parser.add_argument('--num_future_data', type=int, default=0)
 
     # learner
-    parser.add_argument('--alg_name', default=alg_name)
+    parser.add_argument('--alg_name', default='FAC-SIS')
     parser.add_argument('--constrained', default=True)
     parser.add_argument('--gamma', type=float, default=0.99)
     parser.add_argument('--cost_gamma', type=float, default=0.99)
@@ -268,4 +266,4 @@ def main(alg_name):
 
 
 if __name__ == '__main__':
-    main('FAC_w_h')
+    main()
