@@ -36,11 +36,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['OMP_NUM_THREADS'] = '1'
 NAME2WORKERCLS = dict([('OffPolicyWorker', OffPolicyWorker),
                        ('OffPolicyWorkerWithCost', OffPolicyWorkerWithCost)])
-NAME2LEARNERCLS = dict([('NDPG', NDPGLearner),
-                        ('TD3', TD3Learner),
-                        ('SAC', SACLearnerWithCost),
-                        ('FSAC', SACLearnerWithCost),
-                        ('FSAC-A', SACLearnerWithCost),
+NAME2LEARNERCLS = dict([('FAC', SACLearnerWithCost),
+                        ('FAC-SIS', SACLearnerWithCost),
                         ('SACL', SACLearnerWithCost)
                         ])
 NAME2BUFFERCLS = dict([('normal', ReplayBuffer),
@@ -58,14 +55,14 @@ NUM_WORKER = 4
 NUM_LEARNER = 4
 NUM_BUFFER = 4
 
-def built_FSAC_parser(alg_name):
+def built_FAC_parser(alg_name):
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--mode', type=str, default='training') # training testing
     mode = parser.parse_args().mode
 
     if mode == 'testing':
-        test_dir = '../results/FSAC-A/Unicycle/data2plot2/Unicycle-2021-08-09-23-22-26'
+        test_dir = '../results/FAC-SIS/Unicycle/data2plot2/Unicycle-2021-08-09-23-22-26'
         params = json.loads(open(test_dir + '/config.json').read())
         time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         test_log_dir = params['log_dir'] + '/tester/test-{}'.format(time_now)
@@ -210,7 +207,7 @@ def built_FSAC_parser(alg_name):
     return parser.parse_args()
 
 def built_parser(alg_name):
-    args = built_FSAC_parser(alg_name)
+    args = built_FAC_parser(alg_name)
     if 'Custom' in args.env_id:
         from utils.custom_env_utils import register_custom_env
         register_custom_env()
@@ -223,10 +220,10 @@ def built_parser(alg_name):
     if args.alg_name == 'SACL':
         assert not args.mlp_lam
         assert not args.adaptive_safety_index
-    if args.alg_name == 'FSAC':
+    if args.alg_name == 'FAC':
         assert args.mlp_lam
         assert not args.adaptive_safety_index
-    if args.alg_name == 'FSAC-A':
+    if args.alg_name == 'FAC-SIS':
         assert args.mlp_lam
         assert args.adaptive_safety_index
     return args
@@ -265,4 +262,4 @@ def main(alg_name):
 
 
 if __name__ == '__main__':
-    main('FSAC-A')
+    main('FAC-SIS')
