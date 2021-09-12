@@ -38,6 +38,8 @@ NAME2WORKERCLS = dict([('OffPolicyWorker', OffPolicyWorker),
                        ('OffPolicyWorkerWithCost', OffPolicyWorkerWithCost)])
 NAME2LEARNERCLS = dict([('FAC', SACLearnerWithCost),
                         ('FAC-SIS', SACLearnerWithCost),
+                        ('FAC_w_h', SACLearnerWithCost),
+                        ('FAC_w_0', SACLearnerWithCost),
                         ('SACL', SACLearnerWithCost)
                         ])
 NAME2BUFFERCLS = dict([('normal', ReplayBuffer),
@@ -51,9 +53,9 @@ NAME2OPTIMIZERCLS = dict([('OffPolicyAsync', OffPolicyAsyncOptimizer),
 NAME2POLICYCLS = dict([('PolicyWithQs', PolicyWithQs),('PolicyWithMu',PolicyWithMu),
                        ('PolicyWithAdaSafetyIndex', PolicyWithAdaSafetyIndex)])
 NAME2EVALUATORCLS = dict([('Evaluator', Evaluator), ('EvaluatorWithCost', EvaluatorWithCost), ('None', None)])
-NUM_WORKER = 4
-NUM_LEARNER = 4
-NUM_BUFFER = 4
+NUM_WORKER = 2
+NUM_LEARNER = 2
+NUM_BUFFER = 2
 
 def built_FAC_parser(alg_name):
     parser = argparse.ArgumentParser()
@@ -218,18 +220,18 @@ def built_parser(alg_name):
         args.obs_scale = [1.] * args.obs_dim
         args.action_range = 10.0
     if args.alg_name == 'SACL':
-        assert not args.mlp_lam
-        assert not args.adaptive_safety_index
+        args.mlp_lam = False
+        args.adaptive_safety_index = False
     if args.alg_name == 'FAC_w':
-        assert args.mlp_lam
-        assert not args.adaptive_safety_index
+        args.mlp_lam = True
+        args.adaptive_safety_index  = False
         if args.alg_name =='FAC_w_h':
             args.init_sis_paras = [0.3, 1.0, 2.0]
         elif args.alg_name =='FAC_w_0':
             args.init_sis_paras = [0.0, 0.0, 1.0]
     if args.alg_name == 'FAC-SIS':
-        assert args.mlp_lam
-        assert args.adaptive_safety_index
+        args.mlp_lam = True
+        args.adaptive_safety_index = True
     return args
 
 def main(alg_name):
@@ -266,4 +268,4 @@ def main(alg_name):
 
 
 if __name__ == '__main__':
-    main('FAC-SIS')
+    main('FAC_w_h')
