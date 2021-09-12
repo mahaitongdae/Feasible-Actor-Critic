@@ -39,19 +39,19 @@ legend_font_prop = dict(family='Microsoft YaHei')
 
 
 def help_func():
-    tag2plot = ['episode_cost', 'episode_return'] #,'episode_cost', 'episode_return'
-    # tag2plot = ['ep_phi_increase_times']
+    # tag2plot = ['episode_cost', 'episode_return'] #,'episode_cost', 'episode_return'
+    tag2plot = ['ep_phi_increase_times']
     # tag2plot = ['cost_rate']
     # alg_list = ['PPO-DA','FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L'] #
-    # alg_list = ['PPO-DA','PPO-H','PPO-H2','FSAC-0'] #
+    alg_list = ['PPO-DA','PPO-H','FSAC-0'] #
     # alg_list = ['PPO-DA', 'FSAC', 'PPO-H2', 'FSAC-0']  #
     # alg_list = ['FSAC-A','FSAC','FSAC-0'] # 'FSAC-A'
-    alg_list = ['PPO-DA', 'PPO-H', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
+    #alg_list = ['PPO-DA', 'PPO-H', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
     # alg_list = ['PPO-DA', 'FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
     # lbs = ['SSAC', 'FSAC-A' ] # , 'TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'
     # lbs = [r'$\phi_h$', r'$\phi_\xi$']
-    lbs = ['FAC-SIS', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$', 'TRPO-L', 'CPO', 'PPO-L'] #
-    # lbs = ['FAC-SIS', r'FAC w/ $\phi_{F}$',  r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$',]
+    # lbs = ['FAC-SIS', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$', 'TRPO-L', 'CPO', 'PPO-L'] #
+    lbs = ['FAC-SIS',  r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$',]
     # task = ['CustomGoal2'] # 'CustomGoal2','CustomPush1','CustomGoal3',
     # task = ['CustomPush1','CustomPush2','CustomGoal3',] # 'CustomGoal2','CustomPush1','CustomGoal3',
     task = ['CustomGoalPillar2', 'CustomGoalPillar3']
