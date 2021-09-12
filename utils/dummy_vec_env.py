@@ -35,4 +35,7 @@ class DummyVecEnv(Wrapper):  # todo: only for conti task
             else:
                 return self.obs[np.newaxis, :]
 
+    def set_sis_paras(self, sigma, k, n):
+        self.env.set_sis_paras(sigma, k, n)
+
 
