@@ -42,6 +42,7 @@ class OffPolicyWorker(object):
             self.env = DummyVecEnv(env)
         if isinstance(self.args.random_seed, int):
             self.set_seed(self.args.random_seed)
+        self.env.set_sis_paras(*self.args.init_sis_paras)
         self.policy_with_value = policy_cls(**vars(self.args))
         self.batch_size = self.args.batch_size
         self.obs = self.env.reset()

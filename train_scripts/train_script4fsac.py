@@ -220,9 +220,13 @@ def built_parser(alg_name):
     if args.alg_name == 'SACL':
         assert not args.mlp_lam
         assert not args.adaptive_safety_index
-    if args.alg_name == 'FAC':
+    if args.alg_name == 'FAC_w':
         assert args.mlp_lam
         assert not args.adaptive_safety_index
+        if args.alg_name =='FAC_w_h':
+            args.init_sis_paras = [0.3, 1.0, 2.0]
+        elif args.alg_name =='FAC_w_0':
+            args.init_sis_paras = [0.0, 0.0, 1.0]
     if args.alg_name == 'FAC-SIS':
         assert args.mlp_lam
         assert args.adaptive_safety_index
