@@ -22,15 +22,9 @@ with our modified version, utils/engine.py
 To train the model(s) in the paper, run this command:
 
 ```train
-python train_scripts4fsac.py --env_id Safexp-CustomGoal2-v0 --seed 0
+python train_scripts4fsac.py
 ```
-
+Change the alg_name in main.py if training with different algorithm.
 ## Evaluation
 
-To test and evaluate trained policies, run:
-
-```test
-python train_scripts4fsac.py --mode testing --test_dir <your_log_dir> --test_iter_list [2000000]
-```
-
-
+To test and evaluate trained policies, change the mode in train_scripts4fsac.py to testing and run.
