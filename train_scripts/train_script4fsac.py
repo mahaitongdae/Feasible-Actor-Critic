@@ -39,7 +39,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['OMP_NUM_THREADS'] = '1'
 NAME2WORKERCLS = dict([('OffPolicyWorker', OffPolicyWorker),
                        ('OffPolicyWorkerWithCost', OffPolicyWorkerWithCost)])
-NAME2LEARNERCLS = dict([(#'MPG', MPGLearner),
+NAME2LEARNERCLS = dict([# ('MPG', MPGLearner),
                         # ('AMPC', AMPCLearner),
                         # ('NADP', NADPLearner),
                         # ('NDPG', NDPGLearner),

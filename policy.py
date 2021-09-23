@@ -760,9 +760,9 @@ class AttentionPolicyWithMu(tf.Module):
             '''
             attention_ind = tf.cast(isAttended, dtype=tf.float32)
             attention_ind = tf.reshape(attention_ind, (batch_size, 1, -1))
-            repaet_times = tf.constant([1, seq_len, 1], tf.int32)
+            repeat_times = tf.constant([1, seq_len, 1], tf.int32)
 
-            return tf.tile(attention_ind, repaet_times)
+            return tf.tile(attention_ind, repeat_times)
 
         def create_mu_mask(batch_size, seq_len):
             '''
