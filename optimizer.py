@@ -418,7 +418,7 @@ class OffPolicyAsyncOptimizerWithCost(object):
                 learner.set_ppc_params.remote(ppc_params)
             rb, _ = random_choice_with_index(self.replay_buffers)
             samples = ray.get(rb.replay.remote())
-            self.learn_tasks.add(learner, learner.compute_gradient.remote(samples[:-1], rb, samples[-1],
+            self.learn_tasks.add(learner, learner.compute_gradient_together.remote(samples[:-1], rb, samples[-1],
                                                                           self.local_worker.iteration))
 
     def step(self):
@@ -586,7 +586,7 @@ class SingleProcessOffPolicyOptimizer(object):
             except ValueError:
                 grads = [tf.zeros_like(grad) for grad in grads]
                 logger.info('Grad is nan!, zero it')
-            self.worker.apply_gradients(self.iteration, grads)
+            self.worker.apply_gradients_with_backbone(self.iteration, grads)
 
         # log
         if self.iteration % self.args.log_interval == 0:
@@ -595,8 +595,11 @@ class SingleProcessOffPolicyOptimizer(object):
             with self.writer.as_default():
                 for key, val in learner_stats.items():
                     if not isinstance(val, list):
-                        tf.summary.scalar('optimizer/learner_stats/scalar/{}'.format(key), val,
-                                          step=self.iteration)
+                        try:
+                            tf.summary.scalar('optimizer/learner_stats/scalar/{}'.format(key), val,
+                                              step=self.iteration)
+                        except:
+                            pass
                     else:
                         assert isinstance(val, list)
                         for i, v in enumerate(val):

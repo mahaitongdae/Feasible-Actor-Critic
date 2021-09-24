@@ -400,34 +400,34 @@ class AttentionPolicyWithMu(tf.Module):
         value_model_cls, policy_model_cls, lam_cls = NAME2MODELCLS[value_model_cls], \
                                                      NAME2MODELCLS[policy_model_cls], \
                                                      NAME2MODELCLS[backbone_cls]
-        self.policy = policy_model_cls(d_model, policy_num_hidden_layers, policy_num_hidden_units,
+        self.policy = policy_model_cls(2 * d_model, policy_num_hidden_layers, policy_num_hidden_units,
                                        policy_hidden_activation, act_dim * 2, name='policy',
                                        output_activation=policy_out_activation)
-        self.policy_target = policy_model_cls(d_model, policy_num_hidden_layers, policy_num_hidden_units,
+        self.policy_target = policy_model_cls(2 * d_model, policy_num_hidden_layers, policy_num_hidden_units,
                                               policy_hidden_activation, act_dim * 2, name='policy_target',
                                               output_activation=policy_out_activation)
         policy_lr = PolynomialDecay(*policy_lr_schedule)
         self.policy_optimizer = self.tf.keras.optimizers.Adam(policy_lr, name='policy_adam_opt')
 
-        self.Q1 = value_model_cls(d_model + act_dim, value_num_hidden_layers, value_num_hidden_units,
+        self.Q1 = value_model_cls(2 * d_model + act_dim, value_num_hidden_layers, value_num_hidden_units,
                                   value_hidden_activation, 1, name='Q1')
-        self.Q1_target = value_model_cls(d_model + act_dim, value_num_hidden_layers, value_num_hidden_units,
+        self.Q1_target = value_model_cls(2 * d_model + act_dim, value_num_hidden_layers, value_num_hidden_units,
                                          value_hidden_activation, 1, name='Q1_target')
         self.Q1_target.set_weights(self.Q1.get_weights())
         value_lr = PolynomialDecay(*value_lr_schedule)
         self.Q1_optimizer = self.tf.keras.optimizers.Adam(value_lr, name='Q1_adam_opt')
 
-        self.Q2 = value_model_cls(d_model + act_dim, value_num_hidden_layers, value_num_hidden_units,
+        self.Q2 = value_model_cls(2 * d_model + act_dim, value_num_hidden_layers, value_num_hidden_units,
                                   value_hidden_activation, 1, name='Q2')
-        self.Q2_target = value_model_cls(d_model + act_dim, value_num_hidden_layers, value_num_hidden_units,
+        self.Q2_target = value_model_cls(2 * d_model + act_dim, value_num_hidden_layers, value_num_hidden_units,
                                          value_hidden_activation, 1, name='Q2_target')
         self.Q2_target.set_weights(self.Q2.get_weights())
         self.Q2_optimizer = self.tf.keras.optimizers.Adam(value_lr, name='Q2_adam_opt')
 
         cost_value_lr = PolynomialDecay(*cost_value_lr_schedule)
-        self.QC1 = value_model_cls(d_model + act_dim, value_num_hidden_layers, value_num_hidden_units,
+        self.QC1 = value_model_cls(2 * d_model + act_dim, value_num_hidden_layers, value_num_hidden_units,
                                    value_hidden_activation, 1, name='QC1')
-        self.QC1_target = value_model_cls(d_model + act_dim, value_num_hidden_layers, value_num_hidden_units,
+        self.QC1_target = value_model_cls(2 * d_model + act_dim, value_num_hidden_layers, value_num_hidden_units,
                                           value_hidden_activation, 1, name='QC1_target')
         self.QC1_target.set_weights(self.QC1.get_weights())
         self.QC1_optimizer = self.tf.keras.optimizers.Adam(cost_value_lr, name='QC1_adam_opt')
@@ -444,14 +444,18 @@ class AttentionPolicyWithMu(tf.Module):
 
         if self.attention_lam:
             lam_lr = PolynomialDecay(*lam_lr_schedule)
-            self.Lam = lam_cls(ego_dim, con_dim, max_seq_len,
+            self.lam = lam_cls(ego_dim, con_dim, max_seq_len,
                                num_attn_layers, d_model, d_ff, num_heads, drop_rate,
                                name='Lam')
-            self.Lam_optimizer = self.tf.keras.optimizers.Adam(lam_lr, name='lam_opt')
+            self.lam_target = lam_cls(ego_dim, con_dim, max_seq_len,
+                               num_attn_layers, d_model, d_ff, num_heads, drop_rate,
+                               name='Lam')
+            self.lam_target.set_weights(self.lam.get_weights())
+            self.lam_optimizer = self.tf.keras.optimizers.Adam(lam_lr, name='lam_opt')
         else:
             lam_lr = 3e-4
-            self.Lam = LamModel(name='Lam')
-            self.Lam_optimizer = self.tf.keras.optimizers.Adam(lam_lr, name='lam_opt')
+            self.lam = LamModel(name='Lam')
+            self.lam_optimizer = self.tf.keras.optimizers.Adam(lam_lr, name='lam_opt')
 
 
         if self.policy_only:
@@ -463,16 +467,16 @@ class AttentionPolicyWithMu(tf.Module):
                 if self.double_QC:
                     assert self.target
                     self.target_models = (self.Q1_target, self.Q2_target, self.QC1_target, self.QC2_target,
-                                          self.policy_target,)
-                    self.models = (self.Q1, self.Q2, self.QC1, self.QC2, self.policy,self.Lam,)
+                                          self.policy_target, self.lam_target)
+                    self.models = (self.Q1, self.Q2, self.QC1, self.QC2, self.policy,self.lam,)
                     self.optimizers = (self.Q1_optimizer, self.Q2_optimizer, self.QC1_optimizer, self.QC2_optimizer,
-                                       self.policy_optimizer,self.Lam_optimizer,)
+                                       self.policy_optimizer, self.lam_optimizer,)
                 else:
                     self.target_models = (self.Q1_target, self.Q2_target, self.QC1_target,
                                           self.policy_target,)
-                    self.models = (self.Q1, self.Q2, self.QC1, self.policy, self.Lam,)
+                    self.models = (self.Q1, self.Q2, self.QC1, self.policy, self.lam,)
                     self.optimizers = (self.Q1_optimizer, self.Q2_optimizer, self.QC1_optimizer,
-                                       self.policy_optimizer, self.Lam_optimizer,)
+                                       self.policy_optimizer, self.lam_optimizer,)
             elif self.target:
                 self.target_models = (self.Q1_target, self.policy_target,)
                 self.models = (self.Q1, self.policy,)
@@ -524,7 +528,7 @@ class AttentionPolicyWithMu(tf.Module):
             if self.double_Q:
                 q_weights_len = len(self.Q1.trainable_weights)
                 policy_weights_len = len(self.policy.trainable_weights)
-                lam_weights_len = len(self.Lam.trainable_weights)
+                lam_weights_len = len(self.lam.trainable_weights)
                 q1_grad, q2_grad, qc1_grad, qc2_grad, policy_grad =\
                     grads[:q_weights_len], \
                     grads[q_weights_len:2*q_weights_len],\
@@ -542,6 +546,7 @@ class AttentionPolicyWithMu(tf.Module):
                     self.policy_optimizer.apply_gradients(zip(policy_grad, self.policy.trainable_weights))
                     self.update_policy_target()
                     self.update_all_Q_target()
+
                     if self.alpha == 'auto':
                         alpha_grad = grads[-1:]
                         self.alpha_optimizer.apply_gradients(zip(alpha_grad, self.alpha_model.trainable_weights))
@@ -564,7 +569,7 @@ class AttentionPolicyWithMu(tf.Module):
     def apply_ascent_gradients(self, iteration, qc_grad, lam_grad):
         assert self.double_Q
         if iteration % self.dual_ascent_interval == 0 and self.constrained:
-            self.Lam_optimizer.apply_gradients(zip(lam_grad, self.Lam.trainable_weights))
+            self.lam_optimizer.apply_gradients(zip(lam_grad, self.lam.trainable_weights))
     
     @tf.function
     def apply_gradients_with_backbone(self, iteration, grads):
@@ -576,7 +581,7 @@ class AttentionPolicyWithMu(tf.Module):
             if self.double_Q:
                 q_weights_len = len(self.Q1.trainable_weights)
                 policy_weights_len = len(self.policy.trainable_weights)
-                lam_weights_len = len(self.Lam.trainable_weights)
+                lam_weights_len = len(self.lam.trainable_weights)
                 q1_grad, q2_grad, qc1_grad, qc2_grad, policy_grad =\
                     grads[:q_weights_len], \
                     grads[q_weights_len:2 * q_weights_len],\
@@ -588,7 +593,7 @@ class AttentionPolicyWithMu(tf.Module):
                 self.Q1_optimizer.apply_gradients(zip(q1_grad, self.Q1.trainable_weights))
                 self.Q2_optimizer.apply_gradients(zip(q2_grad, self.Q2.trainable_weights))
                 self.QC1_optimizer.apply_gradients(zip(qc1_grad, self.QC1.trainable_weights))
-                self.Lam_optimizer.apply_gradients(zip(lam_grad, self.Lam.trainable_weights))
+                self.lam_optimizer.apply_gradients(zip(lam_grad, self.lam.trainable_weights))
                 if self.double_QC:
                     self.QC2_optimizer.apply_gradients(zip(qc2_grad, self.QC2.trainable_weights))
                 if iteration % self.delay_update == 0:
@@ -596,6 +601,7 @@ class AttentionPolicyWithMu(tf.Module):
                     # self.Lam_optimizer.apply_gradients(zip(lam_grad, self.Lam.trainable_weights))
                     self.update_policy_target()
                     self.update_all_Q_target()
+                    self.update_lam_target()
                     if self.alpha == 'auto':
                         alpha_grad = grads[-1:]
                         self.alpha_optimizer.apply_gradients(zip(alpha_grad, self.alpha_model.trainable_weights))
@@ -604,7 +610,7 @@ class AttentionPolicyWithMu(tf.Module):
                 policy_weights_len = len(self.policy.trainable_weights)
                 q1_grad, policy_grad = grads[:q_weights_len], grads[q_weights_len:q_weights_len+policy_weights_len]
                 self.Q1_optimizer.apply_gradients(zip(q1_grad, self.Q1.trainable_weights))
-                self.Lam_optimizer.apply_gradients(zip(lam_grad, self.Lam.trainable_weights))
+                self.lam_optimizer.apply_gradients(zip(lam_grad, self.lam.trainable_weights))
                 if iteration % self.delay_update == 0:
                     self.policy_optimizer.apply_gradients(zip(policy_grad, self.policy.trainable_weights))
                     # self.Lam_optimizer.apply_gradients(zip(lam_grad, self.Lam.trainable_weights))
@@ -645,6 +651,11 @@ class AttentionPolicyWithMu(tf.Module):
     def update_policy_target(self):
         tau = self.tau
         for source, target in zip(self.policy.trainable_weights, self.policy_target.trainable_weights):
+            target.assign(tau * source + (1.0 - tau) * target)
+
+    def update_lam_target(self):
+        tau = self.tau
+        for source, target in zip(self.lam.trainable_weights, self.lam_target.trainable_weights):
             target.assign(tau * source + (1.0 - tau) * target)
 
     @tf.function
@@ -743,7 +754,7 @@ class AttentionPolicyWithMu(tf.Module):
 
     # ADD: need modifying: return re_obs, lam
     @tf.function
-    def compute_lam(self, obs, isAttended, training=True):
+    def compute_lam(self, obs, isAttended, training=True, target=False):
         '''
         params:
             :obs [B, obs_dim]
@@ -780,18 +791,26 @@ class AttentionPolicyWithMu(tf.Module):
             x_cons = tf.reshape(obs[:, self.ego_dim:], (batch_size, -1, self.con_dim))
             assert x_cons.shape[1] == self.max_seq_len - 1
 
-            re_obs, attn_weights = self.Lam([x_ego, x_cons,
-                                             create_attention_mask(batch_size, self.max_seq_len, isAttended),
-                                             create_mu_mask(batch_size, self.max_seq_len),],
-                                            training=training)
+            if target:
+                re_obs, attn_weights = self.lam_target([x_ego, x_cons,
+                                                 create_attention_mask(batch_size, self.max_seq_len, isAttended),
+                                                 create_mu_mask(batch_size, self.max_seq_len), ],
+                                                training=training)
+            else:
+                re_obs, attn_weights = self.lam([x_ego, x_cons,
+                                                 create_attention_mask(batch_size, self.max_seq_len, isAttended),
+                                                 create_mu_mask(batch_size, self.max_seq_len), ],
+                                                training=training)
             weights = self.tf.squeeze(attn_weights[:, :, 0, 1:], axis=1) # shape: [B, con_num]
             assert weights.shape[-1] == self.con_num
             weights_count = self.tf.reduce_sum( self.tf.cast(weights != 0, tf.float32), axis=-1 )
             weights_sum = self.tf.reduce_sum(weights, axis=-1)
             lam_attn = weights_sum / weights_count
+            ego_re_obs = re_obs[:, 0, :]
+            con_re_obs = self.tf.reduce_sum(re_obs[:,0:,:], axis=1)
             # return re_obs[:, 0, :], tf.cast(tf.exp(5*lam_attn)-1, dtype=tf.float32)
-            return self.tf.reduce_mean(re_obs, axis=1), tf.cast(tf.exp(4*lam_attn)-1, dtype=tf.float32)
-            
+            # return self.tf.reduce_mean(re_obs, axis=1), tf.cast(tf.exp(4*lam_attn)-1, dtype=tf.float32)
+            return self.tf.concat([ego_re_obs, con_re_obs], axis=1), tf.cast(tf.exp(4*lam_attn)-1, dtype=tf.float32)
 
     @property
     def log_alpha(self):
@@ -799,4 +818,4 @@ class AttentionPolicyWithMu(tf.Module):
 
     @property
     def log_lam(self):
-        return tf.nn.softplus(self.Lam.var)
+        return tf.nn.softplus(self.lam.var)

@@ -271,9 +271,9 @@ class SACLearnerWithCost(object):
         batch_obs = self.tf.convert_to_tensor(self.batch_data['batch_obs'], dtype=self.tf.float32)
         batch_obs_tp1 = self.tf.convert_to_tensor(self.batch_data['batch_obs_tp1'], dtype=self.tf.float32)
         batch_isAttended = self.tf.convert_to_tensor(self.batch_data['batch_isAttended'], dtype=self.tf.float32)
-        batch_re_obs, _ = self.policy_with_value.compute_lam(batch_obs, batch_isAttended)
-        batch_re_obs_tp1, _ = self.policy_with_value.compute_lam(batch_obs_tp1, batch_isAttended)
-        self.batch_data.update(dict(batch_re_obs=batch_re_obs, batch_re_obs_tp1=batch_re_obs_tp1))
+        batch_re_target_obs, _ = self.policy_with_value.compute_lam(batch_obs, batch_isAttended, target=True)
+        batch_re_target_obs_tp1, _ = self.policy_with_value.compute_lam(batch_obs_tp1, batch_isAttended, target=True)
+        self.batch_data.update(dict(batch_re_target_obs=batch_re_target_obs, batch_re_target_obs_tp1=batch_re_target_obs_tp1))
 
         with self.target_timer:
             target, cost_target = self.compute_clipped_double_q_target()
@@ -290,7 +290,7 @@ class SACLearnerWithCost(object):
         # (done) ADD HERE: ['batch_obs'] -> ['batch_re_obs']
         # (done) ADD HERE: ['batch_obs_tp1'] -> ['batch_re_obs_tp1']
         processed_rewards = self.preprocessor.tf_process_rewards(self.batch_data['batch_rewards']).numpy()
-        processed_obs_tp1 = self.preprocessor.tf_process_obses(self.batch_data['batch_re_obs_tp1']).numpy()
+        processed_obs_tp1 = self.preprocessor.tf_process_obses(self.batch_data['batch_re_target_obs_tp1']).numpy()
 
         act_tp1, logp_tp1 = self.policy_with_value.compute_action(processed_obs_tp1)
 
@@ -314,17 +314,21 @@ class SACLearnerWithCost(object):
     def compute_td_error(self):
         # (done) ADD HERE: ['batch_obs'] -> ['batch_re_obs']
         # (done) ADD HERE: ['batch_obs_tp1'] -> ['batch_re_obs_tp1']
-        processed_obs = self.preprocessor.tf_process_obses(self.batch_data['batch_re_obs']).numpy()  # n_step*obs_dim
+        # (done) check where use target obs
+        processed_obs = self.preprocessor.tf_process_obses(self.batch_data['batch_obs'])
+        mb_isAttended = self.batch_data['batch_isAttended']
+        mb_re_obs, _ = self.policy_with_value.compute_lam(processed_obs, mb_isAttended)
+        # processed_re_obs = self.preprocessor.tf_process_obses(self.batch_data['batch_re_target_obs']).numpy()  # n_step*obs_dim
         processed_rewards = self.preprocessor.tf_process_rewards(self.batch_data['batch_rewards']).numpy()
         processed_cost = self.batch_data['batch_costs']
-        processed_obs_tp1 = self.preprocessor.tf_process_obses(self.batch_data['batch_re_obs_tp1']).numpy()
+        processed_obs_tp1 = self.preprocessor.tf_process_obses(self.batch_data['batch_re_target_obs_tp1']).numpy()
 
-        values_t = self.policy_with_value.compute_Q1(processed_obs, self.batch_data['batch_actions']).numpy()
+        values_t = self.policy_with_value.compute_Q1(mb_re_obs, self.batch_data['batch_actions']).numpy()
         target_act_tp1, _ = self.policy_with_value.compute_target_action(processed_obs_tp1)
         target_Q1_of_tp1 = self.policy_with_value.compute_Q1_target(processed_obs_tp1, target_act_tp1).numpy()
         td_error = processed_rewards + self.args.gamma * target_Q1_of_tp1 - values_t
 
-        cost_values_t = self.policy_with_value.compute_QC1(processed_obs, self.batch_data['batch_actions']).numpy()
+        cost_values_t = self.policy_with_value.compute_QC1(mb_re_obs, self.batch_data['batch_actions']).numpy()
         target_Q_cost_of_tp1 = self.policy_with_value.compute_QC1_target(processed_obs_tp1, target_act_tp1).numpy()
         cost_td_error = np.abs(processed_cost + self.args.gamma * target_Q_cost_of_tp1 - cost_values_t) + 1e-8
         return td_error, cost_td_error
@@ -431,7 +435,7 @@ class SACLearnerWithCost(object):
 
             policy_gradient = tape.gradient(lagrangian, self.policy_with_value.policy.trainable_weights)
 
-            lam_gradient = tape.gradient(lam_loss, self.policy_with_value.Lam.trainable_weights)
+            lam_gradient = tape.gradient(lam_loss, self.policy_with_value.lam.trainable_weights)
         
         return q_loss1, q_loss2, qc_loss1, q_gradient1, q_gradient2, \
                qc_gradient1, distributions_stats, policy_loss, penalty_terms, lagrangian, policy_gradient, statistic_dict, \
@@ -532,7 +536,7 @@ class SACLearnerWithCost(object):
 
         lam_stats = dict(lam=lams, violation_rate=violation_rate)
         with self.tf.name_scope('lam_gradient') as scope:
-            lam_gradient = tape.gradient(lam_loss, self.policy_with_value.Lam.trainable_weights)
+            lam_gradient = tape.gradient(lam_loss, self.policy_with_value.lam.trainable_weights)
 
             return lam_loss, complementary_slackness, lam_gradient, lams, lam_stats
 
@@ -549,7 +553,7 @@ class SACLearnerWithCost(object):
             return alpha_loss, self.tf.exp(log_alpha), alpha_gradient
 
     def export_graph(self, writer):
-        mb_obs = self.batch_data['batch_re_obs']
+        mb_obs = self.batch_data['batch_re_target_obs']
         mb_targets = self.batch_data['batch_targets']
         mb_actions = self.batch_data['batch_actions']
         self.tf.summary.trace_on(graph=True, profiler=False)
@@ -573,7 +577,7 @@ class SACLearnerWithCost(object):
         self.counter += 1
         if self.args.buffer_type != 'normal':
             self.info_for_buffer.update(dict(td_error=self.compute_td_error()))
-        mb_obs = self.batch_data['batch_re_obs']
+        mb_obs = self.batch_data['batch_re_target_obs']
         mb_actions = self.batch_data['batch_actions']
         mb_targets = self.batch_data['batch_targets']
         mb_cost_targets = self.batch_data['batch_cost_targets']
@@ -663,7 +667,7 @@ class SACLearnerWithCost(object):
             self.info_for_buffer.update(dict(td_error=self.compute_td_error()))
 
         mb_obs = self.batch_data['batch_obs']
-        mb_re_obs = self.batch_data['batch_re_obs']
+        mb_re_obs = self.batch_data['batch_re_target_obs']
         mb_actions = self.batch_data['batch_actions']
         mb_targets = self.batch_data['batch_targets']
         mb_cost_targets = self.batch_data['batch_cost_targets']
