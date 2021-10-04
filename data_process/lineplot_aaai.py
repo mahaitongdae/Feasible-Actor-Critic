@@ -26,6 +26,9 @@ env_name_dict = dict(CustomGoal2='Hazards-0.15-Goal', CustomGoal3='Hazards-0.30-
 tag_name_dict = dict(episode_return='Average Episode Return', episode_cost='Average Episode Costs',
                      cost_rate='Cost Rate', num_sampled_costs='Accumulative Costs',
                      ep_phi_increase_times='Episode Infeasible States Num')
+tag_name_dict.update({'scalar/safety_index_k':r'$k$',
+                      'scalar/safety_index_power':r'$n$',
+                      'scalar/safety_index_margin':r'$\sigma$'})
 y_lim_dict=dict(CustomPush2_episode_cost=[-0.5, 5],
                 CustomPush1_episode_cost=[-0.1, 1],
                 CustomGoal3_episode_cost=[-0.3, 3],
@@ -55,6 +58,10 @@ def help_func():
     # task = ['CustomGoal2'] # 'CustomGoal2','CustomPush1','CustomGoal3',
     # task = ['CustomPush1','CustomPush2','CustomGoal3',] # 'CustomGoal2','CustomPush1','CustomGoal3',
     task = ['CustomGoalPillar2', 'CustomGoalPillar3']
+    tag2plot = ['scalar/safety_index_k','scalar/safety_index_power','scalar/safety_index_margin']
+    alg_list = ['FSAC-A']
+    lbs = ['']
+    task = ['CustomGoal2']
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
     dir_str = '../results/{}/{}' # .format(algo name) # /data2plot
@@ -94,7 +101,7 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, hide_legend=Fal
                             if event.step % 10000 != 0: continue
                             for v in event.summary.value:
                                 t = tf.make_ndarray(v.tensor)
-                                tag_in_events = 'evaluation/' + tag if tag.startswith('ep') else 'optimizer/' + tag
+                                tag_in_events = 'evaluation/' + tag if tag.startswith('ep') else 'optimizer/learner_stats/' + tag # todo: optimizer name
                                 if tag_in_events == v.tag:
                                     if tag == 'episode_return':
                                         t = np.clip(t, -2.0, 100.0)
@@ -130,7 +137,7 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, hide_legend=Fal
                 ax1.legend(handles=handles, labels=labels, loc='best', frameon=False, fontsize=fontsize)
             plt.yticks(fontsize=fontsize)
             plt.xticks(fontsize=fontsize)
-            plt.xlim([0, 150])
+            plt.xlim([0, 100])
             fig_handle = task +'_' + tag
             print(fig_handle)
             if fig_handle in y_lim_dict.keys():
@@ -141,6 +148,8 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, hide_legend=Fal
             if tag == 'ep_phi_increase_times':
                 ax1.set_ylim([-2, ax1.get_ylim()[1]])
             # plt.show()
+            if tag.startswith('scalar/'):
+                tag = tag[7:]
             fig_name = '../data_process/figure/aaai_no_legend_' + task+'-'+tag + '.png' if hide_legend else \
                 '../data_process/figure/aaai_' + task+'-'+tag + '.png'
             if hide_legend:

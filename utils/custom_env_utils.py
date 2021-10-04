@@ -1,3 +1,4 @@
+import gym
 from gym.envs.registration import register
 
 def register_custom_env():
@@ -399,3 +400,19 @@ def register_custom_env():
     register(id=env_id,
              entry_point='safety_gym.envs.mujoco:Engine',
              kwargs={'config': config})
+
+
+def test_custom_env():
+    import numpy as np
+    register_custom_env()
+    env = gym.make('Safexp-CustomGoal1-v0')
+    env.reset()
+    while True:
+        action = np.array([1.0, 0.0])
+        _,_,done,_ = env.step(action)
+        if done:
+            env.reset()
+        env.render()
+
+if __name__ == '__main__':
+    test_custom_env()
