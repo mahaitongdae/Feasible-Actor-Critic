@@ -19,7 +19,7 @@ fontsize = 10 if paper else 16
 SMOOTHFACTOR = 0.1
 SMOOTHFACTOR2 = 8
 DIV_LINE_WIDTH = 50
-txt_store_alg_list = ['CPO', 'PPO-L', 'TRPO-L','PPO-DA']
+txt_store_alg_list = ['CPO', 'PPO-L', 'TRPO-L','PPO-DA','PPO-ISSA']
 env_name_dict = dict(CustomGoal2='Hazards-0.15', CustomGoal3='Hazards-0.30',
                      CustomGoalPillar2='Pillars-0.15',CustomGoalPillar3='Pillar-0.30')
 tag_name_dict = dict(episode_return='Average Episode Return', episode_cost='Average Episode Costs',
@@ -30,9 +30,9 @@ legend_font_prop = dict(family='Microsoft YaHei')
 def help_func():
     # tag2plot = ['episode_return','episode_cost' ] #  'episode_return',
     tag2plot = ['cost_rate']
-    alg_list = ['FSAC', 'TRPO-L', 'CPO', 'PPO-L'] # 'SAC',
-    # alg_list = ['PPO-DA', 'TRPO-L', 'CPO', 'PPO-L']  # 'SAC',
-    lbs = ['SSAC','TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'] # 'SAC',
+    alg_list = ['FSAC', 'PPO-ISSA','TRPO-L', 'CPO', 'PPO-L'] # 'SAC',
+    # alg_list = ['PPO-DA', 'PPO-ISSA', 'TRPO-L', 'CPO', 'PPO-L']  # 'SAC',
+    lbs = ['SSAC','PPO-ISSA', 'TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'] # 'SAC',
     task = ['CustomGoalPillar3'] # 'CustomGoal2',
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
@@ -110,7 +110,7 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
             plt.gcf().set_size_inches(3.85, 2.75)
             plt.tight_layout(pad=0.5)
             # plt.show()
-            fig_name = '../data_process/figure/' + task+'-'+tag + '.png'
+            fig_name = '../data_process/figure/Newbaseline-' + task+'-'+tag + '.png'
             plt.savefig(fig_name)
 
 
