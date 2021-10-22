@@ -28,18 +28,18 @@ label_font_prop = dict(family='Microsoft YaHei', size=16)
 legend_font_prop = dict(family='Microsoft YaHei')
 
 def help_func():
-    # tag2plot = ['episode_return','episode_cost' ] #  'episode_return',
-    tag2plot = ['cost_rate']
-    alg_list = ['FSAC', 'PPO-ISSA','TRPO-L', 'CPO', 'PPO-L'] # 'SAC',
+    tag2plot = ['episode_cost' ] #  'episode_return',
+    # tag2plot = ['cost_rate']
+    alg_list = ['TRPO-L', 'CPO', 'PPO-L'] # 'SAC', 'FSAC', 'PPO-ISSA',
     # alg_list = ['PPO-DA', 'PPO-ISSA', 'TRPO-L', 'CPO', 'PPO-L']  # 'SAC',
-    lbs = ['SSAC','PPO-ISSA', 'TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'] # 'SAC',
-    task = ['CustomGoalPillar2'] # 'CustomGoal2',
+    lbs = ['TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'] # 'SAC', 'SSAC','PPO-ISSA',
+    task = ['CustomGoal2'] # 'CustomGoal2',
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
     dir_str = '../results/{}/{}' # .format(algo name) # /data2plot
     return tag2plot, alg_list, task, lbs, palette, goal_perf_list, dir_str
 
-def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
+def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, base = True):
     tag2plot, alg_list, task_list, lbs, palette, _, dir_str = help_func()
     df_dict = {}
     df_in_one_run_of_one_alg = {}
@@ -102,7 +102,12 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
             ax1.set_xlabel("Iteration [x10000]", fontsize=fontsize)
             handles, labels = ax1.get_legend_handles_labels()
             labels = lbs
-            ax1.legend(handles=handles, labels=labels, loc='best', frameon=False, fontsize=fontsize)
+            if base:
+                basescore = sns.lineplot(x=[0., 150.], y=[0.0, 0.0], linewidth=2, color='black', linestyle='--')
+                ax1.legend(handles=handles + [basescore.lines[-1]], labels=labels + ['threshold'], loc='best',
+                       frameon=False, fontsize=fontsize)
+            else:
+                ax1.legend(handles=handles, labels=labels, loc='best', frameon=False, fontsize=fontsize)
             plt.yticks(fontsize=fontsize)
             plt.xticks(fontsize=fontsize)
             plt.xlim([0, 150])
@@ -110,7 +115,7 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None):
             plt.gcf().set_size_inches(3.85, 2.75)
             plt.tight_layout(pad=0.5)
             # plt.show()
-            fig_name = '../data_process/figure/Newbaseline-' + task+'-'+tag + '.png'
+            fig_name = '../data_process/figure/Newbaseline-' + task+'-'+tag + '.png' if not base else '../data_process/figure/nonzero.png'
             plt.savefig(fig_name)
 
 
