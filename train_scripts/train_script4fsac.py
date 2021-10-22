@@ -54,9 +54,9 @@ NAME2OPTIMIZERCLS = dict([('OffPolicyAsync', OffPolicyAsyncOptimizer),
 NAME2POLICYCLS = dict([('PolicyWithQs', PolicyWithQs),('PolicyWithMu',PolicyWithMu),
                        ('PolicyWithAdaSafetyIndex', PolicyWithAdaSafetyIndex)])
 NAME2EVALUATORCLS = dict([('Evaluator', Evaluator), ('EvaluatorWithCost', EvaluatorWithCost), ('None', None)])
-NUM_WORKER = 4
-NUM_LEARNER = 4
-NUM_BUFFER = 4
+NUM_WORKER = 12
+NUM_LEARNER = 6
+NUM_BUFFER = 6
 
 def built_FSAC_parser(alg_name):
     parser = argparse.ArgumentParser()
@@ -95,7 +95,7 @@ def built_FSAC_parser(alg_name):
     parser.add_argument('--demo', type=bool, default=False)
 
     # env
-    parser.add_argument('--env_id', default='Safexp-CustomPush1-v0') # ['Unicycle-v0']
+    parser.add_argument('--env_id', default='Safexp-CustomDoggoGoal2-v0') # ['Unicycle-v0']
     parser.add_argument('--num_agent', type=int, default=1)
     parser.add_argument('--num_future_data', type=int, default=0)
 
