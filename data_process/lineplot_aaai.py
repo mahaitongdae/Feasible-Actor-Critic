@@ -7,6 +7,8 @@ import pandas as pd
 import seaborn as sns
 import tensorflow as tf
 from tensorflow.core.util import event_pb2
+from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 import os.path as osp
 import tensorboard as tb
 from tensorboard.backend.event_processing import event_accumulator
@@ -42,32 +44,36 @@ legend_font_prop = dict(family='Microsoft YaHei')
 
 
 def help_func():
-    # tag2plot = ['episode_cost', 'episode_return'] #,'episode_cost', 'episode_return'
-    tag2plot = ['ep_phi_increase_times']
+    tag2plot = ['episode_cost'] #,'episode_cost', 'episode_return'
+    # tag2plot = ['ep_phi_increase_times']
     # tag2plot = ['cost_rate']
     # alg_list = ['PPO-DA','FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L'] #
-    alg_list = ['PPO-DA','PPO-H','FSAC-0'] #
+    # alg_list = ['PPO-DA','PPO-H','FSAC-0'] #
     # alg_list = ['PPO-DA', 'FSAC', 'PPO-H2', 'FSAC-0']  #
     # alg_list = ['FSAC-A','FSAC','FSAC-0'] # 'FSAC-A'
-    #alg_list = ['PPO-DA', 'PPO-H', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
+    alg_list = ['PPO-DA', 'PPO-H', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
     # alg_list = ['PPO-DA', 'FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
     # lbs = ['SSAC', 'FSAC-A' ] # , 'TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'
     # lbs = [r'$\phi_h$', r'$\phi_\xi$']
-    # lbs = ['FAC-SIS', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$', 'TRPO-L', 'CPO', 'PPO-L'] #
-    lbs = ['FAC-SIS',  r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$',]
+    lbs = ['FAC-SIS', r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$', 'TRPO-L', 'CPO', 'PPO-L'] #
+    # lbs = ['FAC-SIS',  r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$',]
     # task = ['CustomGoal2'] # 'CustomGoal2','CustomPush1','CustomGoal3',
     # task = ['CustomPush1','CustomPush2','CustomGoal3',] # 'CustomGoal2','CustomPush1','CustomGoal3',
     task = ['CustomGoalPillar2', 'CustomGoalPillar3']
-    tag2plot = ['scalar/safety_index_k','scalar/safety_index_power','scalar/safety_index_margin']
-    alg_list = ['FSAC-A']
-    lbs = ['']
-    task = ['CustomGoal2']
+
+    # si_paras
+    # tag2plot = ['scalar/safety_index_k','scalar/safety_index_power','scalar/safety_index_margin']
+    # alg_list = ['FSAC-A']
+    # lbs = ['']
+    # task = ['CustomGoal2']
+    # end
+
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
     dir_str = '../results/{}/{}' # .format(algo name) # /data2plot
     return tag2plot, alg_list, task, lbs, palette, goal_perf_list, dir_str
 
-def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, hide_legend=False):
+def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, hide_legend=False, zoom=True):
     tag2plot, alg_list, task_list, lbs, palette, _, dir_str = help_func()
     if 'ep_phi_increase_times' in tag2plot: hide_legend=False
     df_dict = {}
@@ -137,7 +143,7 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, hide_legend=Fal
                 ax1.legend(handles=handles, labels=labels, loc='best', frameon=False, fontsize=fontsize)
             plt.yticks(fontsize=fontsize)
             plt.xticks(fontsize=fontsize)
-            plt.xlim([0, 100])
+            plt.xlim([0, 150])
             fig_handle = task +'_' + tag
             print(fig_handle)
             if fig_handle in y_lim_dict.keys():
@@ -150,11 +156,25 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, hide_legend=Fal
             # plt.show()
             if tag.startswith('scalar/'):
                 tag = tag[7:]
-            fig_name = '../data_process/figure/aaai_no_legend_' + task+'-'+tag + '.png' if hide_legend else \
+            fig_name = '../data_process/figure/aaai_zoom_no_legend_' + task+'-'+tag + '.png' if hide_legend else \
                 '../data_process/figure/aaai_' + task+'-'+tag + '.png'
             if hide_legend:
                 h, l = ax1.get_legend_handles_labels()
                 ax1.legend().remove()
+            if zoom:
+                y_lim = ax1.get_ylim()[0]
+                axins = zoomed_inset_axes(ax1, 2)
+                sns.lineplot(x="iteration", y=tag, hue="algorithm",
+                             data=total_dataframe, linewidth=2, palette=palette
+                             )
+                axins.set_xlim([134, 149])
+                axins.set_ylim([0.9*y_lim, -0.9*y_lim])
+                axins.set_xlabel('')
+                axins.set_ylabel('')
+                axins.set_yticklabels(['0.0'])
+                plt.xticks(visible=False)
+                axins.legend().remove()
+                mark_inset(ax1, axins, loc1=3, loc2=4, fc='none', ec='0.0')
             plt.savefig(fig_name)
         if hide_legend:
             legfig, legax = plt.subplots(figsize=(7.5, 0.75))
