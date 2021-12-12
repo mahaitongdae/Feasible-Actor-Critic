@@ -95,7 +95,7 @@ def built_FSAC_parser(alg_name):
     parser.add_argument('--demo', type=bool, default=False)
 
     # env
-    parser.add_argument('--env_id', default='Safexp-CustomDoggoGoal2-v0') # ['Unicycle-v0']
+    parser.add_argument('--env_id', default='Safexp-CustomGoal2-v0') # ['Unicycle-v0']
     parser.add_argument('--num_agent', type=int, default=1)
     parser.add_argument('--num_future_data', type=int, default=0)
 

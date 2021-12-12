@@ -13,7 +13,6 @@ from safety_gym.envs.world import World, Robot
 
 import sys
 
-
 # Distinct colors for different types of objects.
 # For now this is mostly used for visualization.
 # This also affects the vision observation, so if training from pixels.
@@ -49,6 +48,7 @@ ORIGIN_COORDINATES = np.zeros(3)
 DEFAULT_WIDTH = 256
 DEFAULT_HEIGHT = 256
 
+
 class ResamplingError(AssertionError):
     ''' Raised when we fail to sample a valid distribution of objects or goals '''
     pass
@@ -64,7 +64,7 @@ def quat2mat(quat):
     q = np.array(quat, dtype='float64')
     m = np.zeros(9, dtype='float64')
     mujoco_py.functions.mju_quat2Mat(m, q)
-    return m.reshape((3,3))
+    return m.reshape((3, 3))
 
 
 def quat2zalign(quat):
@@ -77,15 +77,14 @@ def quat2zalign(quat):
     # so inner product with z_{ground} = [0,0,1] is
     # z_{body} dot z_{ground} = a**2 - b**2 - c**2 + d**2
     a, b, c, d = quat
-    return a**2 - b**2 - c**2 + d**2
+    return a ** 2 - b ** 2 - c ** 2 + d ** 2
 
 
 class Engine(gym.Env, gym.utils.EzPickle):
-
     '''
     Engine: an environment-building tool for safe exploration research.
 
-    The Engine() class entails everything to do with the tasks and safety 
+    The Engine() class entails everything to do with the tasks and safety
     requirements of Safety Gym environments. An Engine() uses a World() object
     to interface to MuJoCo. World() configurations are inferred from Engine()
     configurations, so an environment in Safety Gym can be completely specified
@@ -117,7 +116,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
         'build_resample': True,  # If true, rejection sample from valid environments
         'continue_goal': True,  # If true, draw a new goal after achievement
         'terminate_resample_failure': True,  # If true, end episode when resampling fails,
-                                             # otherwise, raise a python exception.
+        # otherwise, raise a python exception.
         # TODO: randomize starting joint positions
 
         # Observation flags - some of these require other flags to be on
@@ -148,20 +147,21 @@ class Engine(gym.Env, gym.utils.EzPickle):
         # Render options
         'render_labels': False,
         'render_lidar_markers': True,
-        'render_lidar_radius': 0.15, 
-        'render_lidar_size': 0.025, 
-        'render_lidar_offset_init': 0.5, 
-        'render_lidar_offset_delta': 0.06, 
+        'render_lidar_radius': 0.15,
+        'render_lidar_size': 0.025,
+        'render_lidar_offset_init': 0.5,
+        'render_lidar_offset_delta': 0.06,
 
         # Vision observation parameters
-        'vision_size': (60, 40),  # Size (width, height) of vision observation; gets flipped internally to (rows, cols) format
+        'vision_size': (60, 40),
+        # Size (width, height) of vision observation; gets flipped internally to (rows, cols) format
         'vision_render': True,  # Render vision observation in the viewer
         'vision_render_size': (300, 200),  # Size to render the vision in the viewer
 
         # Lidar observation parameters
         'lidar_num_bins': 10,  # Bins (around a full circle) for lidar sensing
         'lidar_max_dist': None,  # Maximum distance for lidar sensitivity (if None, exponential distance)
-        'lidar_exp_gain': 1.0, # Scaling factor for distance in exponential distance lidar
+        'lidar_exp_gain': 1.0,  # Scaling factor for distance in exponential distance lidar
         'lidar_type': 'pseudo',  # 'pseudo', 'natural', see self.obs_lidar()
         'lidar_alias': True,  # Lidar bins alias into each other
 
@@ -183,7 +183,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
         'box_keepout': 0.2,  # Box keepout radius for placement
         'box_size': 0.2,  # Box half-radius size
         'box_density': 0.001,  # Box density
-        'box_null_dist': 2, # Within box_null_dist * box_size radius of box, no box reward given
+        'box_null_dist': 2,  # Within box_null_dist * box_size radius of box, no box reward given
 
         # Reward is distance towards goal plus a constant for being within range of goal
         # reward_distance should be positive to encourage moving towards the goal
@@ -253,7 +253,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
         'vases_size': 0.1,  # Half-size (radius) of vase object
         'vases_density': 0.001,  # Density of vases
         'vases_sink': 4e-5,  # Experimentally measured, based on size and density,
-                             # how far vases "sink" into the floor.
+        # how far vases "sink" into the floor.
         # Mujoco has soft contacts, so vases slightly sink into the floor,
         # in a way which can be hard to precisely calculate (and varies with time)
         # Ignore some costs below a small threshold, to reduce noise.
@@ -296,7 +296,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
     def __init__(self, config={}):
         # First, parse configuration. Important note: LOTS of stuff happens in
         # parse, and many attributes of the class get set through setattr. If you
-        # are trying to track down where an attribute gets initially set, and 
+        # are trying to track down where an attribute gets initially set, and
         # can't find it anywhere else, it's probably set via the config dict
         # and this parse function.
         self.parse(config)
@@ -308,7 +308,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
         # exit(0)
         self.robot = Robot(self.robot_base)
 
-        self.action_space = gym.spaces.Box(-10, 10, (self.robot.nu,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(-1, 1, (self.robot.nu,), dtype=np.float32)
         self.build_observation_space()
         self.build_placements_dict()
 
@@ -320,6 +320,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
         self.done = True
         self.phi = None
         self.sis_info = dict()
+        self.set_sis_paras(sigma=0.04, k=1, n=2)
 
     def parse(self, config):
         ''' Parse a config dict - see self.DEFAULT for description '''
@@ -485,7 +486,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
             obs_space_dict['vision'] = gym.spaces.Box(0, 1.0, self.vision_size + (3,), dtype=np.float32)
         # Flatten it ourselves
         self.obs_space_dict = obs_space_dict
-        
+
         if self.observation_flatten:
             self.obs_flat_size = sum([np.prod(i.shape) for i in self.obs_space_dict.values()])
             self.observation_space = gym.spaces.Box(-np.inf, np.inf, (self.obs_flat_size,), dtype=np.float32)
@@ -493,7 +494,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
             self.observation_space = gym.spaces.Dict(obs_space_dict)
 
     def toggle_observation_space(self):
-        self.observation_flatten = not(self.observation_flatten)
+        self.observation_flatten = not (self.observation_flatten)
         self.build_observation_space()
 
     def placements_from_location(self, location, keepout):
@@ -539,22 +540,22 @@ class Engine(gym.Env, gym.utils.EzPickle):
             placements.update(self.placements_dict_from_object('goal'))
         if self.task == 'push':
             placements.update(self.placements_dict_from_object('box'))
-        if self.task == 'button' or self.buttons_num: #self.constrain_buttons:
+        if self.task == 'button' or self.buttons_num:  # self.constrain_buttons:
             placements.update(self.placements_dict_from_object('button'))
-        if self.hazards_num: #self.constrain_hazards:
+        if self.hazards_num:  # self.constrain_hazards:
             placements.update(self.placements_dict_from_object('hazard'))
-        if self.vases_num: #self.constrain_vases:
+        if self.vases_num:  # self.constrain_vases:
             placements.update(self.placements_dict_from_object('vase'))
-        if self.pillars_num: #self.constrain_pillars:
+        if self.pillars_num:  # self.constrain_pillars:
             placements.update(self.placements_dict_from_object('pillar'))
-        if self.gremlins_num: #self.constrain_gremlins:
+        if self.gremlins_num:  # self.constrain_gremlins:
             placements.update(self.placements_dict_from_object('gremlin'))
 
         self.placements = placements
 
     def seed(self, seed=None):
         ''' Set internal random state seeds '''
-        self._seed = np.random.randint(2**32) if seed is None else seed
+        self._seed = np.random.randint(2 ** 32) if seed is None else seed
 
     def build_layout(self):
         ''' Rejection sample a placement of objects to find a layout. '''
@@ -598,23 +599,23 @@ class Engine(gym.Env, gym.utils.EzPickle):
         return (xmin + keepout, ymin + keepout, xmax - keepout, ymax - keepout)
 
     def draw_placement(self, placements, keepout):
-        ''' 
+        '''
         Sample an (x,y) location, based on potential placement areas.
 
-        Summary of behavior: 
+        Summary of behavior:
 
-        'placements' is a list of (xmin, xmax, ymin, ymax) tuples that specify 
-        rectangles in the XY-plane where an object could be placed. 
+        'placements' is a list of (xmin, xmax, ymin, ymax) tuples that specify
+        rectangles in the XY-plane where an object could be placed.
 
         'keepout' describes how much space an object is required to have
         around it, where that keepout space overlaps with the placement rectangle.
 
         To sample an (x,y) pair, first randomly select which placement rectangle
         to sample from, where the probability of a rectangle is weighted by its
-        area. If the rectangles are disjoint, there's an equal chance the (x,y) 
+        area. If the rectangles are disjoint, there's an equal chance the (x,y)
         location will wind up anywhere in the placement space. If they overlap, then
         overlap areas are double-counted and will have higher density. This allows
-        the user some flexibility in building placement distributions. Finally, 
+        the user some flexibility in building placement distributions. Finally,
         randomly draw a uniform point within the selected rectangle.
 
         '''
@@ -632,7 +633,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
             if len(constrained) == 1:
                 choice = constrained[0]
             else:
-                areas = [(x2 - x1)*(y2 - y1) for x1, y1, x2, y2 in constrained]
+                areas = [(x2 - x1) * (y2 - y1) for x1, y1, x2, y2 in constrained]
                 probs = np.array(areas) / np.sum(areas)
                 choice = constrained[self.rs.choice(len(constrained), p=probs)]
         xmin, ymin, xmax, ymax = choice
@@ -658,7 +659,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
             floor_size = max(self.placements_extents)
             world_config['floor_size'] = [floor_size + .1, floor_size + .1, 1]
 
-        #if not self.observe_vision:
+        # if not self.observe_vision:
         #    world_config['render_context'] = -1  # Hijack this so we don't create context
         world_config['observe_vision'] = self.observe_vision
 
@@ -718,14 +719,14 @@ class Engine(gym.Env, gym.utils.EzPickle):
             for i in range(self.hazards_num):
                 name = f'hazard{i}'
                 geom = {'name': name,
-                        'size': [self.hazards_size, 1e-2],#self.hazards_size / 2],
-                        'pos': np.r_[self.layout[name], 2e-2],#self.hazards_size / 2 + 1e-2],
+                        'size': [self.hazards_size, 1e-2],  # self.hazards_size / 2],
+                        'pos': np.r_[self.layout[name], 2e-2],  # self.hazards_size / 2 + 1e-2],
                         'rot': self.random_rot(),
                         'type': 'cylinder',
                         'contype': 0,
                         'conaffinity': 0,
                         'group': GROUP_HAZARD,
-                        'rgba': COLOR_HAZARD * [1, 1, 1, 0.25]} #0.1]}  # transparent
+                        'rgba': COLOR_HAZARD * [1, 1, 1, 0.25]}  # 0.1]}  # transparent
                 world_config['geoms'][name] = geom
         if self.pillars_num:
             for i in range(self.pillars_num):
@@ -772,7 +773,6 @@ class Engine(gym.Env, gym.utils.EzPickle):
                     'rgba': COLOR_CIRCLE * [1, 1, 1, 0.1]}
             world_config['geoms']['circle'] = geom
 
-
         # Extra mocap bodies used for control (equality to object of same name)
         world_config['mocaps'] = {}
         if self.gremlins_num:
@@ -785,7 +785,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
                          'rot': self._gremlins_rots[i],
                          'group': GROUP_GREMLIN,
                          'rgba': np.array([1, 1, 1, .1]) * COLOR_GREMLIN}
-                         #'rgba': np.array([1, 1, 1, 0]) * COLOR_GREMLIN}
+                # 'rgba': np.array([1, 1, 1, 0]) * COLOR_GREMLIN}
                 world_config['mocaps'][name] = mocap
 
         return world_config
@@ -839,8 +839,8 @@ class Engine(gym.Env, gym.utils.EzPickle):
             raise ResamplingError('Failed to generate goal')
         # Move goal geom to new layout position
         self.world_config_dict['geoms']['goal']['pos'][:2] = self.layout['goal']
-        #self.world.rebuild(deepcopy(self.world_config_dict))
-        #self.update_viewer_sim = True
+        # self.world.rebuild(deepcopy(self.world_config_dict))
+        # self.update_viewer_sim = True
         goal_body_id = self.sim.model.body_name2id('goal')
         self.sim.model.body_pos[goal_body_id][:2] = self.layout['goal']
         self.sim.forward()
@@ -1126,14 +1126,12 @@ class Engine(gym.Env, gym.utils.EzPickle):
             flat_obs = np.zeros(self.obs_flat_size)
             offset = 0
             for k in sorted(self.obs_space_dict.keys()):
-
                 k_size = np.prod(obs[k].shape)
                 flat_obs[offset:offset + k_size] = obs[k].flat
                 offset += k_size
             obs = flat_obs
         assert self.observation_space.contains(obs), f'Bad obs {obs} {self.observation_space}'
         return obs
-
 
     def cost(self):
         ''' Calculate the current costs and return a dict '''
@@ -1198,7 +1196,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         # Sum all costs into single total cost
         cost['cost'] = sum(v for k, v in cost.items() if k.startswith('cost_'))
-        
+
         # Optionally remove shaping from reward functions. If true, all costs are either 1 or 0 for a given step. If false, then we get dense cost.
         if self.constrain_indicator:
             for k in list(cost.keys()):
@@ -1218,13 +1216,13 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
                 h_dist = self.dist_xy(h_pos)
                 if h_dist < min_dis_to_hazard:
-                    
+
                     min_dis_to_hazard = h_dist
-                    
-    
+
+
                 else:
                     continue
-                    #hitting_angle = 
+                    # hitting_angle =
             return min_dis_to_hazard
 
         elif self.constrain_pillars:
@@ -1235,18 +1233,17 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
                 p_dist = self.dist_xy(p_pos)
                 if p_dist < min_dis_to_pillar:
-                    
-                    min_dis_to_pillar= p_dist
-                    
-                    
+
+                    min_dis_to_pillar = p_dist
+
+
                 else:
                     continue
-                    #hitting_angle = 
+                    # hitting_angle =
             return min_dis_to_pillar
 
         else:
             raise NotImplementedError
-
 
     def closest_distance_cost(self):
         '''return the cost = (hazard radius) - (distance to closest hazard)'''
@@ -1259,14 +1256,14 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
                 h_dist = self.dist_xy(h_pos)
                 if h_dist < min_dis_to_hazard:
-                    
+
                     min_dis_to_hazard = h_dist
                     closest_distance_cost = self.hazards_size - min_dis_to_hazard
-                    
-    
+
+
                 else:
                     continue
-                    #hitting_angle = 
+                    # hitting_angle =
             return closest_distance_cost
 
         elif self.constrain_pillars:
@@ -1277,13 +1274,13 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
                 p_dist = self.dist_xy(p_pos)
                 if p_dist < min_dis_to_pillar:
-                    
-                    min_dis_to_pillar= p_dist
-                    closest_distance_cost = (self.pillars_size + self.robot_keepout -0.3)- min_dis_to_pillar
-                    
+
+                    min_dis_to_pillar = p_dist
+                    closest_distance_cost = (self.pillars_size + self.robot_keepout - 0.3) - min_dis_to_pillar
+
                 else:
                     continue
-                    #hitting_angle = 
+                    # hitting_angle =
             return closest_distance_cost
 
         else:
@@ -1300,14 +1297,14 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
                 h_dist = self.dist_xy(h_pos)
                 if h_dist < min_dis_to_hazard:
-                    
+
                     min_dis_to_hazard = h_dist
                     closest_distance_cost = self.hazards_size ** n - min_dis_to_hazard ** n
-                    
-    
+
+
                 else:
                     continue
-                    #hitting_angle = 
+                    # hitting_angle =
             return closest_distance_cost
 
         elif self.constrain_pillars:
@@ -1318,22 +1315,21 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
                 p_dist = self.dist_xy(p_pos)
                 if p_dist < min_dis_to_pillar:
-                    
-                    min_dis_to_pillar= p_dist
-                    closest_distance_cost = (self.pillars_size + self.robot_keepout -0.3) ** n - min_dis_to_pillar ** n
-                    
+
+                    min_dis_to_pillar = p_dist
+                    closest_distance_cost = (self.pillars_size + self.robot_keepout - 0.3) ** n - min_dis_to_pillar ** n
+
                 else:
                     continue
-                    #hitting_angle = 
+                    # hitting_angle =
             return closest_distance_cost
 
         else:
             raise NotImplementedError
 
-
-    def adaptive_safety_index(self, k=2, sigma=0.04, n=2):
+    def adaptive_safety_index(self):
         '''
-        synthesis the safety index that ensures the valid solution 
+        synthesis the safety index that ensures the valid solution
         '''
         if self.constrain_hazards:
 
@@ -1342,7 +1338,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
             sis_info_t = self.sis_info.get('sis_data', [])
             sis_info_tp1 = []
 
-            # iterate the hazard to compute the maximum safety index 
+            # iterate the hazard to compute the maximum safety index
             for h_pos in self.hazards_pos:
                 # get the state
                 # d = h_dist
@@ -1358,48 +1354,59 @@ class Engine(gym.Env, gym.utils.EzPickle):
                 sis_info_tp1.append((d, dotd))
 
                 # compute the safety index
-                phi_tmp = sigma + self.hazards_size**n - d**n - k*dotd
+                phi_tmp = self.sis_para_sigma + self.hazards_size ** self.sis_para_n \
+                          - d ** self.sis_para_n - self.sis_para_k * dotd
                 # select the largest safety index
                 if phi_tmp > phi:
                     phi = phi_tmp
 
             self.sis_info.update(dict(sis_data=sis_info_tp1, sis_trans=(sis_info_t, sis_info_tp1)))
-            return phi 
-        
+            return phi
+
         elif self.constrain_pillars:
 
             # initialize safety index
             phi = -1e8
+            sis_info_t = self.sis_info.get('sis_data', [])
+            sis_info_tp1 = []
 
-            # iterate the hazard to compute the maximum safety index 
+            # iterate the hazard to compute the maximum safety index
             for p_pos in self.pillars_pos:
-                # get the state 
+                # get the state
                 # d = h_dist
                 p_dist = self.dist_xy(p_pos)
                 d = p_dist
 
-                # dot d = velocity 
+                # dot d = velocity
                 vel_vec = self.data.get_body_xvelp('robot')[0:2]
                 robot_pos = self.world.robot_pos()
                 robot_to_pillar_direction = (p_pos - robot_pos)[0:2]
-                dotd = -np.dot(vel_vec, robot_to_pillar_direction) / np.linalg.norm(robot_to_pillar_direction) # if dotd <0, then we are getting closer to hazard
-                
-                # compute the safety index 
-                phi_tmp = sigma + (self.pillars_size + self.robot_keepout -0.3)**n - d**n - k*dotd
+                dotd = -np.dot(vel_vec, robot_to_pillar_direction) / np.linalg.norm(
+                    robot_to_pillar_direction)  # if dotd <0, then we are getting closer to hazard
+                sis_info_tp1.append((d, dotd))
+
+                # compute the safety index
+                phi_tmp = self.sis_para_sigma + (self.pillars_size + self.robot_keepout - 0.3) ** self.sis_para_n \
+                          - d ** self.sis_para_n - self.sis_para_k * dotd
                 # print(sigma)
                 # print(self.hazards_size**n)
                 # print(-d**n)
                 # print(-k*dotd)
                 # print("-"*20)
-                # select the largest safety index 
+                # select the largest safety index
                 if phi_tmp > phi:
                     phi = phi_tmp
 
-            return phi 
+            self.sis_info.update(dict(sis_data=sis_info_tp1, sis_trans=(sis_info_t, sis_info_tp1)))
+            return phi
 
         else:
-            raise NotImplementedError  
+            raise NotImplementedError
 
+    def set_sis_paras(self, sigma, k, n):
+        self.sis_para_k = k
+        self.sis_para_sigma = sigma
+        self.sis_para_n = n
 
     def adaptive_safety_index_index(self, k=2, sigma=0.04, n=2):
         '''
@@ -1407,71 +1414,70 @@ class Engine(gym.Env, gym.utils.EzPickle):
         '''
         index = None
         if self.constrain_hazards:
-            
 
             # initialize safety index
             phi = -1e8
 
             cnt = -1
 
-            # iterate the hazard to compute the maximum safety index 
+            # iterate the hazard to compute the maximum safety index
             for h_pos in self.hazards_pos:
-                cnt+=1
-                # get the state 
+                cnt += 1
+                # get the state
                 # d = h_dist
                 h_dist = self.dist_xy(h_pos)
                 d = h_dist
 
-                # dot d = velocity 
+                # dot d = velocity
                 vel_vec = self.data.get_body_xvelp('robot')[0:2]
                 robot_pos = self.world.robot_pos()
                 robot_to_hazard_direction = (h_pos - robot_pos)[0:2]
-                dotd = - np.dot(vel_vec, robot_to_hazard_direction) / np.linalg.norm(robot_to_hazard_direction) 
+                dotd = - np.dot(vel_vec, robot_to_hazard_direction) / np.linalg.norm(robot_to_hazard_direction)
 
-                # compute the safety index 
-                phi_tmp = sigma + self.hazards_size**n - d**n - k*dotd
+                # compute the safety index
+                phi_tmp = sigma + self.hazards_size ** n - d ** n - k * dotd
 
-                # select the largest safety index 
+                # select the largest safety index
                 if phi_tmp > phi:
                     index = cnt
                     phi = phi_tmp
 
             return index
-        
+
         elif self.constrain_pillars:
 
             # initialize safety index
             phi = -1e8
             cnt = -1
-            # iterate the hazard to compute the maximum safety index 
+            # iterate the hazard to compute the maximum safety index
             for p_pos in self.pillars_pos:
-                # get the state 
+                # get the state
                 # d = h_dist
                 p_dist = self.dist_xy(p_pos)
                 d = p_dist
 
-                # dot d = velocity 
+                # dot d = velocity
                 vel_vec = self.data.get_body_xvelp('robot')[0:2]
                 robot_pos = self.world.robot_pos()
                 robot_to_pillar_direction = (p_pos - robot_pos)[0:2]
-                dotd = -np.dot(vel_vec, robot_to_pillar_direction) / np.linalg.norm(robot_to_pillar_direction) # if dotd <0, then we are getting closer to hazard
-                
-                # compute the safety index 
-                phi_tmp = sigma + (self.pillars_size + self.robot_keepout -0.3)**n - d**n - k*dotd
+                dotd = -np.dot(vel_vec, robot_to_pillar_direction) / np.linalg.norm(
+                    robot_to_pillar_direction)  # if dotd <0, then we are getting closer to hazard
+
+                # compute the safety index
+                phi_tmp = sigma + (self.pillars_size + self.robot_keepout - 0.3) ** n - d ** n - k * dotd
                 # print(sigma)
                 # print(self.hazards_size**n)
                 # print(-d**n)
                 # print(-k*dotd)
                 # print("-"*20)
-                # select the largest safety index 
+                # select the largest safety index
                 if phi_tmp > phi:
                     index = cnt
                     phi = phi_tmp
 
             return index
         else:
-            raise NotImplementedError  
-                  
+            raise NotImplementedError
 
     def projection_cost_max(self, margin=0.4):
         # VERSION OF projection_cost (max)
@@ -1482,12 +1488,14 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
             for h_pos in self.hazards_pos:
                 # calulate hitting angle
-                # only x,y matter 
+                # only x,y matter
                 hitting_direction = self.data.get_body_xvelp('robot')[0:2]  # +1e8
                 robot_pos = self.world.robot_pos()
                 robot_to_hazard_direction = (h_pos - robot_pos)[0:2]
-                hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0]) #[-pi, pi]
-                projection_cost = (self.hazards_size + margin) ** 2 - ((robot_to_hazard_direction[0]) * np.sin(hitting_angle) - (robot_to_hazard_direction[1]) * np.cos(hitting_angle)) ** 2
+                hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0])  # [-pi, pi]
+                projection_cost = (self.hazards_size + margin) ** 2 - (
+                        (robot_to_hazard_direction[0]) * np.sin(hitting_angle) - (
+                    robot_to_hazard_direction[1]) * np.cos(hitting_angle)) ** 2
                 if projection_cost > max_projection_cost:
                     max_projection_cost = projection_cost
             return max_projection_cost
@@ -1497,12 +1505,14 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
             for p_pos in self.pillars_pos:
                 # calulate hitting angle
-                # only x,y matter 
+                # only x,y matter
                 hitting_direction = self.data.get_body_xvelp('robot')[0:2]  # +1e8
                 robot_pos = self.world.robot_pos()
                 robot_to_pillar_direction = (p_pos - robot_pos)[0:2]
-                hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0]) #[-pi, pi]
-                projection_cost = ((self.pillars_size + self.robot_keepout -0.3) + margin) ** 2 - ((robot_to_pillar_direction[0]) * np.sin(hitting_angle) - (robot_to_pillar_direction[1]) * np.cos(hitting_angle)) ** 2
+                hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0])  # [-pi, pi]
+                projection_cost = ((self.pillars_size + self.robot_keepout - 0.3) + margin) ** 2 - (
+                        (robot_to_pillar_direction[0]) * np.sin(hitting_angle) - (
+                    robot_to_pillar_direction[1]) * np.cos(hitting_angle)) ** 2
                 if projection_cost > max_projection_cost:
                     max_projection_cost = projection_cost
             return max_projection_cost
@@ -1516,7 +1526,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
         self.sim.forward()  # Ensure positions and contacts are correct
         # calucate the projection cost, not accounted in the sum of cost (just for adamba methods simulating)
         if self.constrain_hazards:
-            projection_cost = 0 
+            projection_cost = 0
             min_dis_to_hazard = 1e8
 
             for h_pos in self.hazards_pos:
@@ -1527,16 +1537,18 @@ class Engine(gym.Env, gym.utils.EzPickle):
                     hitting_direction = self.data.get_body_xvelp('robot')[0:2]  # +1e8
                     robot_pos = self.world.robot_pos()
                     robot_to_hazard_direction = (h_pos - robot_pos)[0:2]
-                    hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0]) #[-pi, pi]
+                    hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0])  # [-pi, pi]
 
-                    projection_cost = ((self.pillars_size + self.robot_keepout -0.3) + margin) ** 2 - ((robot_to_hazard_direction[0]) * np.sin(hitting_angle) - (robot_to_hazard_direction[1]) * np.cos(hitting_angle)) ** 2
+                    projection_cost = ((self.pillars_size + self.robot_keepout - 0.3) + margin) ** 2 - (
+                            (robot_to_hazard_direction[0]) * np.sin(hitting_angle) - (
+                        robot_to_hazard_direction[1]) * np.cos(hitting_angle)) ** 2
                 else:
                     continue
-                    #hitting_angle = 
+                    # hitting_angle =
             return projection_cost
 
         elif self.constrain_pillars:
-            projection_cost = 0 
+            projection_cost = 0
             min_dis_to_pillar = 1e8
 
             for h_pos in self.pillars_pos:
@@ -1547,19 +1559,18 @@ class Engine(gym.Env, gym.utils.EzPickle):
                     hitting_direction = self.data.get_body_xvelp('robot')[0:2]  # +1e8
                     robot_pos = self.world.robot_pos()
                     robot_to_pillar_direction = (h_pos - robot_pos)[0:2]
-                    hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0]) #[-pi, pi]
+                    hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0])  # [-pi, pi]
 
-                    projection_cost = ((self.pillars_size + self.robot_keepout -0.3) + margin) ** 2 - ((robot_to_pillar_direction[0]) * np.sin(hitting_angle) - (robot_to_pillar_direction[1]) * np.cos(hitting_angle)) ** 2
+                    projection_cost = ((self.pillars_size + self.robot_keepout - 0.3) + margin) ** 2 - (
+                            (robot_to_pillar_direction[0]) * np.sin(hitting_angle) - (
+                        robot_to_pillar_direction[1]) * np.cos(hitting_angle)) ** 2
                 else:
                     continue
-                    #hitting_angle = 
+                    # hitting_angle =
             return projection_cost
 
         else:
             raise NotImplementedError
-
-
-
 
     def projection_cost_index_max(self, margin=0.4):
         # calucate the projection cost, not accounted in the sum of cost (just for adamba methods simulating)
@@ -1568,14 +1579,16 @@ class Engine(gym.Env, gym.utils.EzPickle):
             max_projection_cost = -1e8
             cnt = -1
             for h_pos in self.hazards_pos:
-                cnt+=1
+                cnt += 1
                 # calulate hitting angle
-                # only x,y matter 
+                # only x,y matter
                 hitting_direction = self.data.get_body_xvelp('robot')[0:2]  # +1e8
                 robot_pos = self.world.robot_pos()
                 robot_to_hazard_direction = (h_pos - robot_pos)[0:2]
-                hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0]) #[-pi, pi]
-                projection_cost = (self.hazards_size + margin) ** 2 - ((robot_to_hazard_direction[0]) * np.sin(hitting_angle) - (robot_to_hazard_direction[1]) * np.cos(hitting_angle)) ** 2
+                hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0])  # [-pi, pi]
+                projection_cost = (self.hazards_size + margin) ** 2 - (
+                        (robot_to_hazard_direction[0]) * np.sin(hitting_angle) - (
+                    robot_to_hazard_direction[1]) * np.cos(hitting_angle)) ** 2
                 if projection_cost > max_projection_cost:
                     index = cnt
                     max_projection_cost = projection_cost
@@ -1585,14 +1598,16 @@ class Engine(gym.Env, gym.utils.EzPickle):
             max_projection_cost = -1e8
             cnt = -1
             for p_pos in self.pillars_pos:
-                cnt+=1
+                cnt += 1
                 # calulate hitting angle
-                # only x,y matter 
+                # only x,y matter
                 hitting_direction = self.data.get_body_xvelp('robot')[0:2]  # +1e8
                 robot_pos = self.world.robot_pos()
                 robot_to_pillar_direction = (p_pos - robot_pos)[0:2]
-                hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0]) #[-pi, pi]
-                projection_cost = ((self.pillars_size + self.robot_keepout -0.3)+ margin) ** 2 - ((robot_to_pillar_direction[0]) * np.sin(hitting_angle) - (robot_to_pillar_direction[1]) * np.cos(hitting_angle)) ** 2
+                hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0])  # [-pi, pi]
+                projection_cost = ((self.pillars_size + self.robot_keepout - 0.3) + margin) ** 2 - (
+                        (robot_to_pillar_direction[0]) * np.sin(hitting_angle) - (
+                    robot_to_pillar_direction[1]) * np.cos(hitting_angle)) ** 2
                 if projection_cost > max_projection_cost:
                     index = cnt
                     max_projection_cost = projection_cost
@@ -1604,11 +1619,11 @@ class Engine(gym.Env, gym.utils.EzPickle):
         # calucate the projection cost, not accounted in the sum of cost (just for adamba methods simulating)
         index = None
         if self.constrain_hazards:
-            projection_cost = 0 
+            projection_cost = 0
             min_dis_to_hazard = 1e8
             cnt = -1
             for h_pos in self.hazards_pos:
-                cnt+=1
+                cnt += 1
                 h_dist = self.dist_xy(h_pos)
                 if h_dist < min_dis_to_hazard:
                     index = cnt
@@ -1616,19 +1631,21 @@ class Engine(gym.Env, gym.utils.EzPickle):
                     hitting_direction = self.data.get_body_xvelp('robot')[0:2]  # +1e8
                     robot_pos = self.world.robot_pos()
                     robot_to_hazard_direction = (h_pos - robot_pos)[0:2]
-                    hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0]) #[-pi, pi]
-                    projection_cost = (self.hazards_size + margin) ** 2 - ((robot_to_hazard_direction[0]) * np.sin(hitting_angle) - (robot_to_hazard_direction[1]) * np.cos(hitting_angle)) ** 2
+                    hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0])  # [-pi, pi]
+                    projection_cost = (self.hazards_size + margin) ** 2 - (
+                            (robot_to_hazard_direction[0]) * np.sin(hitting_angle) - (
+                        robot_to_hazard_direction[1]) * np.cos(hitting_angle)) ** 2
                 else:
                     continue
-                    #hitting_angle = 
+                    # hitting_angle =
             return index
 
         elif self.constrain_pillars:
-            projection_cost = 0 
+            projection_cost = 0
             min_dis_to_pillar = 1e8
             cnt = -1
             for h_pos in self.pillars_pos:
-                cnt+=1
+                cnt += 1
                 p_dist = self.dist_xy(h_pos)
                 if p_dist < min_dis_to_pillar:
                     index = cnt
@@ -1636,11 +1653,13 @@ class Engine(gym.Env, gym.utils.EzPickle):
                     hitting_direction = self.data.get_body_xvelp('robot')[0:2]  # +1e8
                     robot_pos = self.world.robot_pos()
                     robot_to_pillar_direction = (h_pos - robot_pos)[0:2]
-                    hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0]) #[-pi, pi]
-                    projection_cost = ((self.pillars_size + self.robot_keepout -0.3) + margin) ** 2 - ((robot_to_pillar_direction[0]) * np.sin(hitting_angle) - (robot_to_pillar_direction[1]) * np.cos(hitting_angle)) ** 2
+                    hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0])  # [-pi, pi]
+                    projection_cost = ((self.pillars_size + self.robot_keepout - 0.3) + margin) ** 2 - (
+                            (robot_to_pillar_direction[0]) * np.sin(hitting_angle) - (
+                        robot_to_pillar_direction[1]) * np.cos(hitting_angle)) ** 2
                 else:
                     continue
-                    #hitting_angle = 
+                    # hitting_angle =
             return index
 
         else:
@@ -1666,7 +1685,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
     def set_mocaps(self):
         ''' Set mocap object positions before a physics step is executed '''
-        if self.gremlins_num: # self.constrain_gremlins:
+        if self.gremlins_num:  # self.constrain_gremlins:
             phase = float(self.data.time)
             for i in range(self.gremlins_num):
                 name = f'gremlin{i}'
@@ -1697,15 +1716,15 @@ class Engine(gym.Env, gym.utils.EzPickle):
         # Set action
         action_range = self.model.actuator_ctrlrange
         # action_scale = action_range[:,1] - action_range[:, 0]
-
-        self.data.ctrl[:] = np.clip(action, action_range[:,0], action_range[:,1]) #np.clip(action * 2 / action_scale, -1, 1)
+        self.data.ctrl[:] = np.clip(action, action_range[:, 0],
+                                    action_range[:, 1])  # np.clip(action * 2 / action_scale, -1, 1)
         if self.action_noise:
             self.data.ctrl[:] += self.action_noise * self.rs.randn(self.model.nu)
 
         # Simulate physics forward
         exception = False
 
-        for _ in range(self.rs.binomial(self.frameskip_binom_n*ratio, self.frameskip_binom_p)):
+        for _ in range(self.rs.binomial(self.frameskip_binom_n * ratio, self.frameskip_binom_p)):
             try:
                 self.set_mocaps()
                 self.sim.step()  # Physics simulation step
@@ -1720,7 +1739,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
             info['cost_exception'] = 1.0
         else:
             self.sim.forward()  # Needed to get sensor readings correct!
-            
+
             if simulate_in_adamba:
                 # avoid step in simulation chaning self.last_goal_dis etc
                 reward = None
@@ -1819,8 +1838,8 @@ class Engine(gym.Env, gym.utils.EzPickle):
             robot_vel = self.world.robot_vel()
             x, y, _ = robot_com
             u, v, _ = robot_vel
-            radius = np.sqrt(x**2 + y**2)
-            reward += (((-u*y + v*x)/radius)/(1 + np.abs(radius - self.circle_radius))) * self.reward_circle
+            radius = np.sqrt(x ** 2 + y ** 2)
+            reward += (((-u * y + v * x) / radius) / (1 + np.abs(radius - self.circle_radius))) * self.reward_circle
         # Intrinsic reward for uprightness
         if self.reward_orientation:
             zalign = quat2zalign(self.data.get_body_xquat(self.reward_orientation_body))
@@ -1828,7 +1847,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
         # Clip reward
         if self.reward_clip:
             in_range = reward < self.reward_clip and reward > -self.reward_clip
-            if not(in_range):
+            if not (in_range):
                 reward = np.clip(reward, -self.reward_clip, self.reward_clip)
                 print('Warning: reward was outside of range!')
         return reward
@@ -1894,14 +1913,14 @@ class Engine(gym.Env, gym.utils.EzPickle):
             self.viewer.draw_pixels(self.save_obs_vision, 0, 0)
 
     def render(self,
-               mode='human', 
+               mode='human',
                camera_id=None,
                width=DEFAULT_WIDTH,
                height=DEFAULT_HEIGHT
                ):
         ''' Render the environment to the screen '''
 
-        if self.viewer is None or mode!=self._old_render_mode:
+        if self.viewer is None or mode != self._old_render_mode:
             # Set camera if specified
             if mode == 'human':
                 self.viewer = MjViewer(self.sim)
@@ -1910,7 +1929,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
             else:
                 self.viewer = MjRenderContextOffscreen(self.sim)
                 self.viewer._hide_overlay = True
-                self.viewer.cam.fixedcamid = camera_id #self.model.camera_name2id(mode)
+                self.viewer.cam.fixedcamid = camera_id  # self.model.camera_name2id(mode)
                 self.viewer.cam.type = const.CAMERA_FIXED
             self.viewer.render_swap_callback = self.render_swap_callback
             # Turn all the geom groups on
@@ -1975,9 +1994,9 @@ class Engine(gym.Env, gym.utils.EzPickle):
             vision = np.array(vision, dtype='uint8')
             self.save_obs_vision = vision
 
-        if mode=='human':
+        if mode == 'human':
             self.viewer.render()
-        elif mode=='rgb_array':
+        elif mode == 'rgb_array':
             self.viewer.render(width, height)
             data = self.viewer.read_pixels(width, height, depth=False)
             self.viewer._markers[:] = []
