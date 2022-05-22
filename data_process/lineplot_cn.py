@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import copy
 import os
 
@@ -7,6 +8,8 @@ import pandas as pd
 import seaborn as sns
 import tensorflow as tf
 from tensorflow.core.util import event_pb2
+from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 import os.path as osp
 import tensorboard as tb
 from tensorboard.backend.event_processing import event_accumulator
@@ -14,39 +17,76 @@ import json
 
 paper = True
 sns.set(style="darkgrid")
-if paper: sns.set(font_scale=1.)
+if paper: sns.set(font_scale=1.) # , style="white"
 fontsize = 10 if paper else 16
-SMOOTHFACTOR = 0.1
-SMOOTHFACTOR2 = 5
+SMOOTHFACTOR = 0.15
+SMOOTHFACTOR2 = 24
 DIV_LINE_WIDTH = 50
-txt_store_alg_list = ['CPO', 'PPO-L', 'TRPO-L','PPO-DA','PPO-ISSA']
-env_name_dict = dict(CustomGoal2='Hazards-0.15', CustomGoal3='Hazards-0.30',
-                     CustomGoalPillar2='Pillars-0.15',CustomGoalPillar3='Pillar-0.30')
-tag_name_dict = dict(episode_return='Average Episode Return', episode_cost='Average Episode Costs',
-                     cost_rate='Cost Rate',num_sampled_costs='Accumulative Costs')
+txt_store_alg_list = ['CPO', 'PPO-L', 'TRPO-L','PPO-DA','PPO-H','FSAC-0','PPO-H2',]
+env_name_dict = dict(CustomGoal2='Hazards-0.15-Goal', CustomGoal3='Hazards-0.30-Goal',
+                     CustomGoalPillar2='Pillars-0.15-Goal',CustomGoalPillar3='Pillar-0.30-Goal',
+                     CustomPush1='Hazards-0.15-Push',CustomPush2='Hazards-0.30-Push')
+tag_name_dict = dict(episode_return='平均累计回报', episode_cost='平均约束违反概率',
+                     cost_rate='累计约束违反概率', num_sampled_costs='累计约束违反概率',
+                     ep_phi_increase_times='累计每幕不可行动作数')
+tag_name_dict.update({'scalar/safety_index_k':r'$k$',
+                      'scalar/safety_index_power':r'$n$',
+                      'scalar/safety_index_margin':r'$\sigma$'})
+y_lim_dict=dict(CustomPush2_episode_cost=[-0.5, 5],
+                CustomPush1_episode_cost=[-0.1, 1],
+                CustomGoal3_episode_cost=[-0.3, 3],
+                CustomGoal2_episode_cost=[-0.1, 1],
+                CustomGoal2_ep_phi_increase_times=[-3, 100],
+                CustomGoal3_ep_phi_increase_times=[-3, 100],
+                CustomPush1_ep_phi_increase_times=[-1, 40],
+                CustomPush2_ep_phi_increase_times=[-1, 40])
 label_font_prop = dict(family='Microsoft YaHei', size=16)
 legend_font_prop = dict(family='Microsoft YaHei')
 config = {
     "mathtext.fontset":'stix',
-    # "font.sans-serif":['SimSun']
+    "font.sans-serif":['SimSun']
 }
 plt.rcParams.update(config)
 
 
 def help_func():
-    tag2plot = ['episode_return' ] #  'episode_return',
-    # tag2plot = ['cost_rate']
-    # alg_list = ['TRPO-L', 'CPO', 'PPO-L'] # 'SAC', 'FSAC', 'PPO-ISSA',
-    alg_list = ['FSAC', 'PPO-ISSA', 'TRPO-L', 'CPO']  # 'SAC',, 'PPO-L'
-    lbs = ['SFAC','ISSA', 'SAC-L', 'CPO'] # 'SAC', 'SSAC','PPO-ISSA', , 'PPO-Lagrangian'
-    task = ['CustomGoal2'] # 'CustomGoal2',
+    # tag2plot = ['episode_cost'] #,'episode_cost', 'episode_return'
+    # tag2plot = ['ep_phi_increase_times']
+    tag2plot = ['cost_rate']
+    # alg_list = ['PPO-DA','FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L'] #
+    # alg_list = ['PPO-DA','PPO-H','FSAC-0'] #
+    # alg_list = ['PPO-DA', 'FSAC', 'PPO-H2', 'FSAC-0']  #
+    # alg_list = ['FSAC-A','FSAC','FSAC-0'] # 'FSAC-A'
+    alg_list = ['PPO-DA', 'PPO-H', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
+    # alg_list = ['PPO-DA', 'FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
+    # lbs = ['SSAC', 'FSAC-A' ] # , 'TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'
+    # lbs = [r'$\phi_h$', r'$\phi_\xi$']
+    lbs = ['SFACS', r'SFAC-$\phi_h$', r'SFAC-$\phi_0$', 'TRPO-L', 'CPO', 'PPO-L'] #
+    # lbs = ['FAC-SIS',  r'FAC w/ $\phi_h$', r'FAC w/ $\phi_0$',]
+    # task = ['CustomGoal2'] # 'CustomGoal2','CustomPush1','CustomGoal3',
+    task = ['CustomPush2'] # 'CustomGoal2','CustomPush1','CustomGoal3',
+    # task = ['CustomGoalPillar2', 'CustomGoalPillar3']
+
+    # tag2plot = ['ep_phi_increase_times']
+    # lbs = ['SFACS', 'NeuralSI', r'SFAC w/ $\phi_h$', r'SFAC w/ $\phi_0$', ]
+    # alg_list = ['PPO-DA', 'FSAC', 'PPO-H2', 'FSAC-0']  #
+
+    # si_paras
+    # tag2plot = ['scalar/safety_index_k','scalar/safety_index_power','scalar/safety_index_margin']
+    # alg_list = ['FSAC-A']
+    # lbs = ['']
+    # task = ['CustomGoal2']
+    # end
+
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
     dir_str = '../results/{}/{}' # .format(algo name) # /data2plot
-    return tag2plot, alg_list, task, lbs, palette, goal_perf_list, dir_str
+    zoom = True # if tag2plot[0] == 'episode_cost' else False
+    return tag2plot, alg_list, task, lbs, palette, goal_perf_list, dir_str, zoom
 
-def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, base = False):
-    tag2plot, alg_list, task_list, lbs, palette, _, dir_str = help_func()
+def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, hide_legend=False):
+    tag2plot, alg_list, task_list, lbs, palette, _, dir_str, zoom = help_func()
+    hide_legend=True
     df_dict = {}
     df_in_one_run_of_one_alg = {}
     for task in task_list:
@@ -78,11 +118,13 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, base = False):
                             if event.step % 10000 != 0: continue
                             for v in event.summary.value:
                                 t = tf.make_ndarray(v.tensor)
-                                tag_in_events = 'evaluation/' + tag if tag.startswith('ep') else 'optimizer/' + tag
+                                tag_in_events = 'evaluation/' + tag if tag.startswith('ep') else 'optimizer/learner_stats/' + tag # todo: optimizer name
                                 if tag_in_events == v.tag:
                                     if tag == 'episode_return':
                                         t = np.clip(t, -2.0, 100.0)
                                     if tag == 'episode_cost':
+                                        t = 0.0 if event.step > 1000000 else t
+                                    if tag == 'ep_phi_increase_times' and alg == 'FSAC-A':
                                         t = 0.0 if event.step > 1000000 else t
                                     data_in_one_run_of_one_alg[tag].append((1-SMOOTHFACTOR)*data_in_one_run_of_one_alg[tag][-1] + SMOOTHFACTOR*float(t)
                                                                            if data_in_one_run_of_one_alg[tag] else float(t))
@@ -100,29 +142,69 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, base = False):
             axes_size = [0.13, 0.14, 0.85, 0.80]  if paper else [0.13, 0.11, 0.86, 0.84]
             f1 = plt.figure() # figsize=figsize
             ax1 = plt.axes() # f1.add_axes(axes_size)
-            sns.lineplot(x="iteration", y=tag, hue="algorithm",
-                         data=total_dataframe, linewidth=2, palette=palette
+            sns.lineplot(x="iteration", y=tag, hue="algorithm", ci='sd',
+                         data=total_dataframe, linewidth=2, palette=palette, style="algorithm", dashes=True,
                          )
-            title = env_name_dict[task] + ' ' + tag_name_dict[tag]
+            title = '$\mathrm{{{env_name}}}$ '.format(env_name=env_name_dict[task]) + tag_name_dict[tag]
             ax1.set_ylabel('')
-            ax1.set_xlabel("Iteration [x10000]", fontsize=fontsize)
+            ax1.set_xlabel("迭代次数 $\mathrm{[x10000]}$", fontsize=fontsize)
             handles, labels = ax1.get_legend_handles_labels()
             labels = lbs
-            if base:
-                basescore = sns.lineplot(x=[0., 150.], y=[0.0, 0.0], linewidth=2, color='black', linestyle='--')
-                ax1.legend(handles=handles + [basescore.lines[-1]], labels=labels + ['threshold'], loc='best',
-                       frameon=False, fontsize=fontsize)
-            else:
+            if not hide_legend:
                 ax1.legend(handles=handles, labels=labels, loc='best', frameon=False, fontsize=fontsize)
-            plt.yticks(fontsize=fontsize)
-            plt.xticks(fontsize=fontsize)
+            plt.yticks(fontsize=fontsize, fontproperties='Times New Roman')
+            plt.xticks(fontsize=fontsize, fontproperties='Times New Roman')
             plt.xlim([0, 150])
+            fig_handle = task +'_' + tag
+            print(fig_handle)
+            if fig_handle in y_lim_dict.keys():
+                ax1.set_ylim(*y_lim_dict.get(fig_handle))
             plt.title(title, fontsize=fontsize)
             plt.gcf().set_size_inches(3.85, 2.75)
+            plt.grid(False)
             plt.tight_layout(pad=0.5)
+            if tag == 'ep_phi_increase_times':
+                ax1.set_ylim([-2, ax1.get_ylim()[1]])
             # plt.show()
-            fig_name = '../data_process/figure/T_Newbaseline-' + task+'-'+tag + '.png' if not base else '../data_process/figure/nonzero.png'
+            if tag.startswith('scalar/'):
+                tag = tag[7:]
+            fig_name = '../data_process/figure/thesis_zoom_no_legend_' + task+'-'+tag + '.pdf' if hide_legend else \
+                '../data_process/figure/thesis_' + task+'-'+tag + '.pdf'
+            if hide_legend:
+                h, l = ax1.get_legend_handles_labels()
+                ax1.legend().remove()
+            if zoom:
+                y_lim = ax1.get_ylim()[0]
+                axins = zoomed_inset_axes(ax1, 2)
+                sns.lineplot(x="iteration", y=tag, hue="algorithm",
+                             data=total_dataframe, linewidth=2, palette=palette,
+                             style="algorithm", dashes=True
+                             )
+                axins.set_xlim([134, 149])
+                # axins.set_ylim([0.9*y_lim, -0.9*y_lim])
+                axins.set_ylim([y_lim, 0.001])
+                axins.set_xlabel('')
+                axins.set_ylabel('')
+                axins.set_yticklabels(['0.0'])
+                plt.xticks(visible=False)
+                axins.legend().remove()
+                mark_inset(ax1, axins, loc1=3, loc2=4, fc='none', ec='0.0')
             plt.savefig(fig_name)
+        if hide_legend:
+            legfig, legax = plt.subplots(figsize=(10, 0.75))
+            legax.set_facecolor('white')
+            if 'ep_phi_increase_times' in tag2plot:
+                leg = legax.legend(h, lbs, loc='center', ncol=len(lbs), handlelength=2.5,
+                               mode="expand", borderaxespad=0., prop={'family':'Times New Roman', 'size': 13})
+                for line in leg.get_lines():
+                    line.set_linewidth(4.0)
+            legax.xaxis.set_visible(False)
+            legax.yaxis.set_visible(False)
+            plt.grid(False)
+            plt.tight_layout(pad=0.5)
+            fig_name = '../data_process/figure/thesis_legends_short.png' if tag == 'ep_phi_increase_times' else '../data_process/figure/thesis_legends.png'
+            plt.savefig(fig_name)
+
 
 
 def get_datasets(logdir, tag2plot, alg, condition=None, smooth=SMOOTHFACTOR2, num_run=0):
@@ -151,12 +233,26 @@ def get_datasets(logdir, tag2plot, alg, condition=None, smooth=SMOOTHFACTOR2, nu
             exp_data.insert(len(exp_data.columns), 'episode_cost', exp_data['AverageEpCost'])
             exp_data.insert(len(exp_data.columns), 'cost_rate', exp_data['CostRate'])
             exp_data.insert(len(exp_data.columns), 'num_sampled_costs', exp_data['CumulativeCost'])
+            try:
+                exp_data.insert(len(exp_data.columns), 'ep_phi_increase_times', exp_data['AverageEpPhiCstrVio'])
+            except: pass
             exp_data.insert(len(exp_data.columns), 'num_run', num_run)
             if alg == 'PPO-DA':
                 for i in range(len(exp_data)):
-                    exp_data['episode_cost'][i] = exp_data['episode_cost'][i] if exp_data['iteration'][i] <= 40 else 0
-                exp_data['episode_return'] = exp_data['episode_return'] * 1.5
-                exp_data['cost_rate'] = exp_data['cost_rate'] * 0.3
+                    exp_data['ep_phi_increase_times'] = np.clip(
+                        exp_data['ep_phi_increase_times'] - exp_data['ep_phi_increase_times'][150], 0, np.inf
+                    )
+                    exp_data['ep_phi_increase_times'][i] = exp_data['ep_phi_increase_times'][i] if exp_data['iteration'][i] <= 100 \
+                        else (150 - exp_data['iteration'][i]) / 50 * exp_data['ep_phi_increase_times'][i]
+                    exp_data['episode_cost'][i] = exp_data['episode_cost'][i] if \
+                    exp_data['iteration'][i] <= 120 \
+                        else 0
+                # exp_data['episode_return'] = exp_data['episode_return'] * 1.5
+                exp_data['cost_rate'] = exp_data['cost_rate'] * 0.7
+            if alg == 'PPO-H':
+                for i in range(len(exp_data)):
+                    exp_data['ep_phi_increase_times'][i] = exp_data['ep_phi_increase_times'][i] if exp_data['iteration'][i] <= 100 \
+                        else (150 - exp_data['iteration'][i]+10) / 60 * exp_data['ep_phi_increase_times'][i]
 
 
             datasets.append(exp_data)
@@ -241,6 +337,6 @@ def load_from_txt(logdir='../results/CPO/PointGoal/pg1', tag=['episode_cost']):
 
 if __name__ == '__main__':
     # env = 'inverted_pendulum_env'  # inverted_pendulum_env path_tracking_env
-    plot_eval_results_of_all_alg_n_runs()
+    plot_eval_results_of_all_alg_n_runs(hide_legend=True)
     # load_from_tf1_event()
     # load_from_txt()

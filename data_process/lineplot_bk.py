@@ -34,12 +34,12 @@ plt.rcParams.update(config)
 
 
 def help_func():
-    tag2plot = ['episode_return' ] #  'episode_return',
+    tag2plot = ['episode_cost' ] #  'episode_return',
     # tag2plot = ['cost_rate']
     # alg_list = ['TRPO-L', 'CPO', 'PPO-L'] # 'SAC', 'FSAC', 'PPO-ISSA',
-    alg_list = ['FSAC', 'PPO-ISSA', 'TRPO-L', 'CPO']  # 'SAC',, 'PPO-L'
-    lbs = ['SFAC','ISSA', 'SAC-L', 'CPO'] # 'SAC', 'SSAC','PPO-ISSA', , 'PPO-Lagrangian'
-    task = ['CustomGoal2'] # 'CustomGoal2',
+    alg_list = ['PPO-DA', 'PPO-ISSA', 'TRPO-L', 'CPO']  # 'SAC',, 'PPO-L'
+    lbs = ['SSAC','PPO-ISSA', 'SAC-Lagrangian', 'CPO'] # 'SAC', 'SSAC','PPO-ISSA', , 'PPO-Lagrangian'
+    task = ['CustomGoalPillar3'] # 'CustomGoal2',
     palette = "bright"
     goal_perf_list = [-200, -100, -50, -30, -20, -10, -5]
     dir_str = '../results/{}/{}' # .format(algo name) # /data2plot
