@@ -53,11 +53,11 @@ def help_func():
     # tag2plot = ['episode_cost'] #,'episode_cost', 'episode_return'
     # tag2plot = ['ep_phi_increase_times']
     tag2plot = ['cost_rate']
-    alg_list = ['PPO-DA','FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L'] #
+    # alg_list = ['PPO-DA','FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L'] #
     # alg_list = ['PPO-DA','PPO-H','FSAC-0'] #
     # alg_list = ['PPO-DA', 'FSAC', 'PPO-H2', 'FSAC-0']  #
     # alg_list = ['FSAC-A','FSAC','FSAC-0'] # 'FSAC-A'
-    # alg_list = ['PPO-DA', 'PPO-H', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
+    alg_list = ['PPO-DA', 'PPO-H', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
     # alg_list = ['PPO-DA', 'FSAC', 'FSAC-0', 'TRPO-L', 'CPO', 'PPO-L']  #
     # lbs = ['SSAC', 'FSAC-A' ] # , 'TRPO-Lagrangian', 'CPO', 'PPO-Lagrangian'
     # lbs = [r'$\phi_h$', r'$\phi_\xi$']
@@ -181,7 +181,8 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, hide_legend=Fal
                              style="algorithm", dashes=True
                              )
                 axins.set_xlim([134, 149])
-                axins.set_ylim([0.9*y_lim, -0.9*y_lim])
+                # axins.set_ylim([0.9*y_lim, -0.9*y_lim])
+                axins.set_ylim([y_lim, 0.001])
                 axins.set_xlabel('')
                 axins.set_ylabel('')
                 axins.set_yticklabels(['0.0'])
@@ -195,11 +196,11 @@ def plot_eval_results_of_all_alg_n_runs(dirs_dict_for_plot=None, hide_legend=Fal
             if 'ep_phi_increase_times' in tag2plot:
                 leg = legax.legend(h, lbs, loc='center', ncol=len(lbs), handlelength=2.5,
                                mode="expand", borderaxespad=0., prop={'family':'Times New Roman', 'size': 13})
+                for line in leg.get_lines():
+                    line.set_linewidth(4.0)
             legax.xaxis.set_visible(False)
             legax.yaxis.set_visible(False)
             plt.grid(False)
-            for line in leg.get_lines():
-                line.set_linewidth(4.0)
             plt.tight_layout(pad=0.5)
             fig_name = '../data_process/figure/thesis_legends_short.png' if tag == 'ep_phi_increase_times' else '../data_process/figure/thesis_legends.png'
             plt.savefig(fig_name)
